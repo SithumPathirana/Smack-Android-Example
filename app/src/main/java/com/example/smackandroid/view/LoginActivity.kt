@@ -7,8 +7,6 @@ import android.content.pm.PackageManager
 import android.support.design.widget.Snackbar
 import android.support.v7.app.AppCompatActivity
 import android.app.LoaderManager.LoaderCallbacks
-import android.content.CursorLoader
-import android.content.Loader
 import android.database.Cursor
 import android.net.Uri
 import android.os.AsyncTask
@@ -23,9 +21,11 @@ import android.widget.TextView
 
 import java.util.ArrayList
 import android.Manifest.permission.READ_CONTACTS
-import android.content.Intent
+import android.content.*
+import android.preference.PreferenceManager
 import android.util.Log
 import com.example.smackandroid.R
+import com.example.smackandroid.service.NetworkConnectionService
 
 import kotlinx.android.synthetic.main.activity_login.*
 
@@ -37,6 +37,8 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
      * Keep track of the login task to ensure we can cancel it if requested.
      */
     private var mAuthTask: UserLoginTask? = null
+
+    private var mBroadcastReceiver:BroadcastReceiver?=null
 
     private val TAG="LoginActivity"
 
@@ -54,6 +56,28 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
         })
 
         email_sign_in_button.setOnClickListener { attemptLogin() }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        this.unregisterReceiver(mBroadcastReceiver)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        mBroadcastReceiver=object :BroadcastReceiver(){
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val action=intent?.action
+                when(action){
+                    NetworkConnectionService.UI_AUTHENTICATED -> goToContactListActivity()
+                    //Show the main app window
+                }
+
+
+            }
+        }
+        val filter = IntentFilter(NetworkConnectionService.UI_AUTHENTICATED)
+        this.registerReceiver(mBroadcastReceiver,filter)
     }
 
     private fun populateAutoComplete() {
@@ -147,9 +171,10 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
             // Show a progress spinner, and kick off a background task to
             // perform the user login attempt.
            // showProgress(true)
-            Log.d(TAG,"Jid and password are valid ,proceeding with login.")
-            val intent=Intent(this, ContactListActivity::class.java)
-            startActivity(intent)
+           // Log.d(TAG,"Jid and password are valid ,proceeding with login.")
+           // val intent=Intent(this, ContactListActivity::class.java)
+           // startActivity(intent)
+             saveCredentialsAndLogin()
             //mAuthTask = UserLoginTask(emailStr, passwordStr)
             //mAuthTask!!.execute(null as Void?)
         }
@@ -316,4 +341,30 @@ class LoginActivity : AppCompatActivity(), LoaderCallbacks<Cursor> {
          */
         private val DUMMY_CREDENTIALS = arrayOf("foo@example.com:hello", "bar@example.com:world")
     }
+
+
+    private fun saveCredentialsAndLogin() {
+    Log.d(TAG,"saveCredentialsAndLogin() called.");
+    val prefs = PreferenceManager.getDefaultSharedPreferences(this)
+    prefs.edit()
+            .putString("xmpp_jid", email.text.toString())
+            .putString("xmpp_password", password.text.toString())
+            .putBoolean("xmpp_logged_in",true)
+            .apply()
+
+    //Start the service
+    val intent = Intent(this,NetworkConnectionService::class.java)
+    startService(intent)
+
+}
+
+    private fun goToContactListActivity(){
+        Log.d(TAG,"Got a broadcast to show the main app window")
+        showProgress(false)
+        val intent=Intent(this,ContactListActivity::class.java)
+        startActivity(intent)
+        finish()
+    }
+
+
 }

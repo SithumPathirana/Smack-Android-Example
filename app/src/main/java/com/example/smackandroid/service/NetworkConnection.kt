@@ -1,6 +1,7 @@
 package com.example.smackandroid.service
 
 import android.content.Context
+import android.content.Intent
 import android.preference.PreferenceManager
 import android.util.Log
 import org.jivesoftware.smack.ConnectionListener
@@ -11,6 +12,7 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPException
+import org.jivesoftware.smack.roster.Roster
 import java.io.IOException
 import org.jxmpp.jid.impl.JidCreate
 
@@ -26,7 +28,7 @@ class NetworkConnection(context: Context):ConnectionListener {
     private var mUsername: String? = null
     private var mPassword: String? = null
     private var mServiceName: String? = null
-    lateinit var mConnection: XMPPTCPConnection
+    private var mConnection: XMPPTCPConnection?=null
 
     enum class ConnectionState {
         CONNECTED, AUTHENTICATED, CONNECTING, DISCONNECTING, DISCONNECTED
@@ -49,7 +51,7 @@ class NetworkConnection(context: Context):ConnectionListener {
 
         }else{
             mUsername=""
-            mPassword=""
+            mServiceName=""
         }
     }
 
@@ -58,54 +60,88 @@ class NetworkConnection(context: Context):ConnectionListener {
         Log.d(TAG, "Connecting to server $mServiceName")
         val builder = XMPPTCPConnectionConfiguration.builder()
         val serviceName = JidCreate.domainBareFrom(mServiceName)
-        builder.setServiceName(serviceName)
+        builder.setXmppDomain(serviceName)
         builder.setUsernameAndPassword(mUsername, mPassword)
-        builder.setRosterLoadedAtLogin(true)
-        builder.setResource("Rooster")
+        builder.setResource("SmackAndroid")
 
         //Set up the ui thread broadcast message receiver.
         //setupUiThreadBroadCastMessageReceiver();
 
-        mConnection = XMPPTCPConnection(builder.build())
-        mConnection.addConnectionListener(this)
-        mConnection.connect()
-        mConnection.login()
 
-        val reconnectionManager = ReconnectionManager.getInstanceFor(mConnection)
-        reconnectionManager.setEnabledPerDefault(true)
+
+        mConnection = XMPPTCPConnection(builder.build())
+        mConnection?.addConnectionListener(this)
+        val roster=Roster.getInstanceFor(mConnection)
+        roster.isRosterLoadedAtLogin=true
+        mConnection?.connect()
+        mConnection?.login()
+
+        var reconnectionManager = ReconnectionManager.getInstanceFor(mConnection)
+        ReconnectionManager.setEnabledPerDefault(true)
         reconnectionManager.enableAutomaticReconnection()
 
+    }
+
+    fun disconnect() {
+        Log.d(TAG, "Disconnecting from serser $mServiceName")
+        try {
+            if (mConnection != null) {
+                mConnection?.disconnect()
+            }
+
+        } catch (e: SmackException.NotConnectedException) {
+            NetworkConnectionService.sConnectionState = ConnectionState.DISCONNECTED
+            e.printStackTrace()
+
+        }
+
+
+    }
+
+    private fun showContactListActivityWhenAuthenticated(){
+        val intent=Intent(NetworkConnectionService.UI_AUTHENTICATED)
+        intent.setPackage(mApplicationContext?.packageName)
+        mApplicationContext?.sendBroadcast(intent)
+        Log.d(TAG,"Sent the broadcast that we are authenticated")
     }
 
 
 
 
     override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState=ConnectionState.CONNECTED
+        Log.d(TAG,"Authenticated Successfully")
+        showContactListActivityWhenAuthenticated()
     }
 
     override fun connected(connection: XMPPConnection?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState=ConnectionState.CONNECTED
+        Log.d(TAG,"Connected Successfully")
     }
 
     override fun connectionClosed() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState=ConnectionState.DISCONNECTED
+        Log.d(TAG,"Connection closed")
     }
 
     override fun connectionClosedOnError(e: Exception?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState=ConnectionState.DISCONNECTED
+        Log.d(TAG,"ConnectionClosedOnError, error "+ e.toString())
     }
 
     override fun reconnectingIn(seconds: Int) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState = ConnectionState.CONNECTING
+        Log.d(TAG,"ReconnectingIn")
     }
 
     override fun reconnectionFailed(e: Exception?) {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState = ConnectionState.DISCONNECTED
+        Log.d(TAG,"ReconnectionFailed()")
     }
 
     override fun reconnectionSuccessful() {
-        TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        NetworkConnectionService.sConnectionState = ConnectionState.CONNECTED
+        Log.d(TAG,"ReconnectionSuccessful")
     }
 
 

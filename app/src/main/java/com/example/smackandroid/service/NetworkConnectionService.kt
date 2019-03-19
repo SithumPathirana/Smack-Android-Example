@@ -6,17 +6,52 @@ import android.os.IBinder
 import android.util.Log
 import android.os.Handler
 import android.os.Looper
-
+import org.jivesoftware.smack.XMPPException
+import org.jivesoftware.smack.SmackException
+import java.io.IOException
 
 
 class NetworkConnectionService:Service(){
 
     private var mActive: Boolean = false//Stores whether or not the thread is active
-    lateinit var mThread: Thread
-    lateinit var mTHandler: Handler//We use this handler to post messages to
+    private var mThread: Thread?=null
+    private var mTHandler: Handler?=null//We use this handler to post messages to
     //the background thread.
 
-    private val TAG="NetworkConnection"
+    private var mConnection: NetworkConnection? = null
+
+    companion object {
+
+        const val TAG="NetworkConnection"
+
+        val UI_AUTHENTICATED = "com.example.smackandroid.uiauthenticated"
+        val SEND_MESSAGE = "com.example.smackandroid.sendmessage"
+        val BUNDLE_MESSAGE_BODY = "b_body"
+        val BUNDLE_TO = "b_to"
+
+
+
+        var sConnectionState: NetworkConnection.ConnectionState? = null
+        var sLoggedInState: NetworkConnection.LoggedInState? = null
+
+
+        fun getState(): NetworkConnection.ConnectionState {
+            return if (sConnectionState == null) {
+                NetworkConnection.ConnectionState.DISCONNECTED
+            } else sConnectionState!!
+        }
+
+
+        fun getLoggedInState(): NetworkConnection.LoggedInState {
+            return if (sLoggedInState == null) {
+                NetworkConnection.LoggedInState.LOGGED_OUT
+            } else sLoggedInState!!
+        }
+    }
+
+
+
+
 
     override fun onBind(intent: Intent?): IBinder? {
         return null
@@ -28,19 +63,45 @@ class NetworkConnectionService:Service(){
     }
 
 
+    private fun initConnection() {
+        Log.d(TAG, "initConnection()")
+        if (mConnection == null) {
+            mConnection = NetworkConnection(this)
+        }
+        try {
+            mConnection?.connect()
+
+        } catch (e: IOException) {
+            Log.d(TAG, "Something went wrong while connecting ,make sure the credentials are right and try again")
+            e.printStackTrace()
+            //Stop the service all together.
+            stopSelf()
+        } catch (e: SmackException) {
+            Log.d(TAG, "Something went wrong while connecting ,make sure the credentials are right and try again")
+            e.printStackTrace()
+            stopSelf()
+        } catch (e: XMPPException) {
+            Log.d(TAG, "Something went wrong while connecting ,make sure the credentials are right and try again")
+            e.printStackTrace()
+            stopSelf()
+        }
+
+    }
+
+
    private fun start() {
         Log.d(TAG, " Service Start() function called.")
         if (!mActive) {
             mActive = true
-            if (mThread == null || !mThread.isAlive) {
+            if (mThread == null || !mThread?.isAlive!!) {
                 mThread = Thread(Runnable {
                     Looper.prepare()
                     mTHandler = Handler()
-                    //initConnection();
+                    initConnection()
                     //THE CODE HERE RUNS IN A BACKGROUND THREAD.
                     Looper.loop()
                 })
-                mThread.start()
+                mThread?.start()
             }
 
 
@@ -52,9 +113,11 @@ class NetworkConnectionService:Service(){
   private fun stop() {
         Log.d(TAG,"stop()")
         mActive = false;
-        mTHandler.post(object :Runnable {
+        mTHandler?.post(object :Runnable {
             override fun run() {
-
+                if (mConnection!=null){
+                    mConnection?.disconnect()
+                }
             }
         })
 
