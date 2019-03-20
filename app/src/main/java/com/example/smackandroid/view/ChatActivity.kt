@@ -5,6 +5,7 @@ import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.view.View
+import android.widget.Toast
 import com.example.smackandroid.R
 import com.example.smackandroid.service.NetworkConnection
 import com.example.smackandroid.service.NetworkConnectionService
@@ -35,6 +36,10 @@ class ChatActivity : AppCompatActivity() {
             val intent=Intent(NetworkConnectionService.SEND_MESSAGE)
             intent.putExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY,typedMessage.text.toString())
             intent.putExtra(NetworkConnectionService.BUNDLE_TO,contactJID)
+
+            sendBroadcast(intent)
+        }else{
+            Toast.makeText(applicationContext,"Client is not connected to the server.Message is not sent",Toast.LENGTH_LONG).show()
         }
     }
 }
