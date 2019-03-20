@@ -1,7 +1,9 @@
 package com.example.smackandroid.service
 
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentFilter
 import android.preference.PreferenceManager
 import android.util.Log
 import org.jivesoftware.smack.ConnectionListener
@@ -12,9 +14,13 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPException
+import org.jivesoftware.smack.chat2.ChatManager
 import org.jivesoftware.smack.roster.Roster
 import java.io.IOException
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.jid.EntityBareJid
+
+
 
 
 
@@ -29,6 +35,7 @@ class NetworkConnection(context: Context):ConnectionListener {
     private var mPassword: String? = null
     private var mServiceName: String? = null
     private var mConnection: XMPPTCPConnection?=null
+    private var uiThreadMessageREciever:BroadcastReceiver?=null
 
     enum class ConnectionState {
         CONNECTED, AUTHENTICATED, CONNECTING, DISCONNECTING, DISCONNECTED
@@ -65,7 +72,7 @@ class NetworkConnection(context: Context):ConnectionListener {
         builder.setResource("SmackAndroid")
 
         //Set up the ui thread broadcast message receiver.
-        //setupUiThreadBroadCastMessageReceiver();
+        setUpUiThreadBroadcastMessageReciever()
 
 
 
@@ -103,6 +110,39 @@ class NetworkConnection(context: Context):ConnectionListener {
         intent.setPackage(mApplicationContext?.packageName)
         mApplicationContext?.sendBroadcast(intent)
         Log.d(TAG,"Sent the broadcast that we are authenticated")
+    }
+
+    private fun setUpUiThreadBroadcastMessageReciever(){
+        uiThreadMessageREciever=object :BroadcastReceiver(){
+            override fun onReceive(context: Context?, intent: Intent?) {
+                val action=intent?.action
+                if (action==NetworkConnectionService.SEND_MESSAGE){
+                    // Sends the message to the server
+                    sendMessage(intent.getStringExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY),
+                        intent.getStringExtra(NetworkConnectionService.BUNDLE_TO))
+                }
+
+            }
+        }
+        val filter=IntentFilter()
+        filter.addAction(NetworkConnectionService.SEND_MESSAGE)
+        mApplicationContext?.registerReceiver(uiThreadMessageREciever,filter)
+    }
+
+    private fun sendMessage(body:String,toJid:String){
+
+        Log.d(TAG,"Sending message to $toJid")
+
+        val jid: EntityBareJid? = null
+        val chatManager=ChatManager.getInstanceFor(mConnection)
+
+        try {
+
+        }catch (e:SmackException.NotConnectedException){
+            e.printStackTrace()
+        }catch (e: InterruptedException){
+            e.printStackTrace()
+        }
     }
 
 
