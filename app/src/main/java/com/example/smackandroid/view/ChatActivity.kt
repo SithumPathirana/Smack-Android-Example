@@ -10,9 +10,18 @@ import com.example.smackandroid.R
 import com.example.smackandroid.service.NetworkConnection
 import com.example.smackandroid.service.NetworkConnectionService
 import kotlinx.android.synthetic.main.activity_chat.*
+import android.content.BroadcastReceiver
+
+
+
 
 
 class ChatActivity : AppCompatActivity() {
+
+
+    private var mBroadcastReceiver: BroadcastReceiver? = null
+
+
 
     companion object {
         const val TAG="ChatActivity"
@@ -27,6 +36,14 @@ class ChatActivity : AppCompatActivity() {
         val intent=intent
         contactJID=intent.getStringExtra("jid")
         title=contactJID
+    }
+
+    override fun onPause() {
+        super.onPause()
+    }
+
+    override fun onResume() {
+        super.onResume()
     }
 
 

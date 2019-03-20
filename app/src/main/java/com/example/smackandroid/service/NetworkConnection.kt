@@ -14,16 +14,15 @@ import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
 import org.jivesoftware.smack.ReconnectionManager
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.XMPPException
+import org.jivesoftware.smack.chat2.Chat
 import org.jivesoftware.smack.chat2.ChatManager
+import org.jivesoftware.smack.chat2.IncomingChatMessageListener
+import org.jivesoftware.smack.packet.Message
 import org.jivesoftware.smack.roster.Roster
 import java.io.IOException
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.EntityBareJid
-
-
-
-
-
+import org.jxmpp.stringprep.XmppStringprepException
 
 
 class NetworkConnection(context: Context):ConnectionListener {
@@ -83,6 +82,34 @@ class NetworkConnection(context: Context):ConnectionListener {
         mConnection?.connect()
         mConnection?.login()
 
+
+        ChatManager.getInstanceFor(mConnection).addIncomingListener(object :IncomingChatMessageListener{
+            override fun newIncomingMessage(from: EntityBareJid?, message: Message?, chat: Chat?) {
+
+                Log.d(TAG,"message.getBody() :$message?.body")
+                Log.d(TAG,"message.getFrom() :$message?.from")
+
+                val from = message?.from.toString()
+                var contactJid = ""
+                if ( from.contains("/") ){
+                    contactJid=from.split("/")[0]
+                    Log.d(TAG,"The real jid is :$contactJid")
+                    Log.d(TAG,"The message is from :$from")
+                }else{
+                     contactJid=from
+                }
+                // Bundle up the intent and send broadcast
+                 val intent = Intent(NetworkConnectionService.NEW_MESSAGE)
+            intent.setPackage(mApplicationContext?.packageName)
+            intent.putExtra(NetworkConnectionService.BUNDLE_FROM_JID,contactJid)
+            intent.putExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY,message?.body)
+            mApplicationContext?.sendBroadcast(intent)
+            Log.d(TAG,"Received message from :$contactJid broadcast sent.")
+            ///ADDED
+
+            }
+        })
+
         var reconnectionManager = ReconnectionManager.getInstanceFor(mConnection)
         ReconnectionManager.setEnabledPerDefault(true)
         reconnectionManager.enableAutomaticReconnection()
@@ -133,10 +160,24 @@ class NetworkConnection(context: Context):ConnectionListener {
 
         Log.d(TAG,"Sending message to $toJid")
 
-        val jid: EntityBareJid? = null
+        var jid: EntityBareJid? = null
         val chatManager=ChatManager.getInstanceFor(mConnection)
 
         try {
+            jid=JidCreate.entityBareFrom(toJid)
+
+        }catch (e:XmppStringprepException) {
+
+            e.printStackTrace()
+        }
+
+        val chat=chatManager.chatWith(jid)
+
+        try {
+            val message=Message(jid,Message.Type.chat)
+            message.body=body
+            chat.send(message)
+
 
         }catch (e:SmackException.NotConnectedException){
             e.printStackTrace()

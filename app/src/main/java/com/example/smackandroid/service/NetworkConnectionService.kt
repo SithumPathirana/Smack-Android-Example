@@ -24,10 +24,13 @@ class NetworkConnectionService:Service(){
 
         const val TAG="NetworkConnection"
 
-        val UI_AUTHENTICATED = "com.example.smackandroid.uiauthenticated"
-        val SEND_MESSAGE = "com.example.smackandroid.sendmessage"
-        val BUNDLE_MESSAGE_BODY = "b_body"
-        val BUNDLE_TO = "b_to"
+       const val UI_AUTHENTICATED = "com.example.smackandroid.uiauthenticated"
+       const  val SEND_MESSAGE = "com.example.smackandroid.sendmessage"
+       const  val BUNDLE_MESSAGE_BODY = "b_body"
+        const  val BUNDLE_TO = "b_to"
+
+       const val NEW_MESSAGE = "com.blikoon.rooster.newmessage"
+       const  val BUNDLE_FROM_JID = "b_from"
 
 
 
