@@ -1,4 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"-->
+                <!--android:layout_width="match_parent"-->
+                <!--android:layout_height="wrap_content"-->
+                <!--android:paddingVertical="10dp"-->
+                <!--android:paddingRight="50dp"-->
+                <!--android:paddingLeft="60dp"-->
+                <!--android:clipToPadding="false">-->
+
+    <!--<TextView android:layout_width="wrap_content"-->
+              <!--android:layout_height="wrap_content"-->
+              <!--android:text="Hello"-->
+              <!--android:id="@+id/message"-->
+               <!--android:layout_centerHorizontal="true"/>-->
+
+<!--</RelativeLayout>-->
+
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -10,7 +26,7 @@
     <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/message_body"
+            android:id="@+id/my_message_body"
             android:background="@drawable/my_message"
             android:textColor="#fff"
             android:padding="10dp"

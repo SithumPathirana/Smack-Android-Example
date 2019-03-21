@@ -79,15 +79,24 @@ class NetworkConnection(context: Context):ConnectionListener {
         mConnection?.addConnectionListener(this)
         val roster=Roster.getInstanceFor(mConnection)
         roster.isRosterLoadedAtLogin=true
-        mConnection?.connect()
-        mConnection?.login()
+
+        try {
+            Log.d(TAG, "Calling connect")
+            mConnection?.connect()
+            mConnection?.login(mUsername,mPassword)
+            Log.d(TAG, " login() Called ")
+        }catch (e:InterruptedException){
+            e.printStackTrace()
+        }
+
+
 
 
         ChatManager.getInstanceFor(mConnection).addIncomingListener(object :IncomingChatMessageListener{
             override fun newIncomingMessage(from: EntityBareJid?, message: Message?, chat: Chat?) {
 
-                Log.d(TAG,"message.getBody() :$message?.body")
-                Log.d(TAG,"message.getFrom() :$message?.from")
+                Log.d(TAG,"message.getBody() :${message?.body}")
+                Log.d(TAG,"message.getFrom() :${message?.from}")
 
                 val from = message?.from.toString()
                 var contactJid = ""
