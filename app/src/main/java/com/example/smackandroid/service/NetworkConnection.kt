@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.os.AsyncTask
 import android.preference.PreferenceManager
 import android.util.Log
 import org.jivesoftware.smack.ConnectionListener
@@ -19,10 +20,14 @@ import org.jivesoftware.smack.chat2.ChatManager
 import org.jivesoftware.smack.chat2.IncomingChatMessageListener
 import org.jivesoftware.smack.packet.Message
 import org.jivesoftware.smack.roster.Roster
+import org.jivesoftware.smackx.httpfileupload.HttpFileUploadManager
+import org.jivesoftware.smackx.httpfileupload.UploadProgressListener
 import java.io.IOException
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.stringprep.XmppStringprepException
+import java.io.File
+import java.net.URL
 
 
 class NetworkConnection(context: Context):ConnectionListener {
@@ -35,6 +40,7 @@ class NetworkConnection(context: Context):ConnectionListener {
     private var mServiceName: String? = null
     private var mConnection: XMPPTCPConnection?=null
     private var uiThreadMessageREciever:BroadcastReceiver?=null
+    var httpFileUploadManager:HttpFileUploadManager?=null
 
     enum class ConnectionState {
         CONNECTED, AUTHENTICATED, CONNECTING, DISCONNECTING, DISCONNECTED
@@ -42,6 +48,46 @@ class NetworkConnection(context: Context):ConnectionListener {
 
     enum class LoggedInState {
         LOGGED_IN, LOGGED_OUT
+    }
+
+   inner class FileUploadTask:AsyncTask<String,Long,URL>(){
+
+       private var fileFullPath:String?=null
+       private var counterPartJid:String?=null
+
+        override fun doInBackground(vararg params: String?): URL? {
+            fileFullPath =params[0]
+            counterPartJid=params[1]
+
+            try {
+               return httpFileUploadManager!!.uploadFile(File(fileFullPath),object :UploadProgressListener{
+                   override fun onUploadProgress(uploadedBytes: Long, totalBytes: Long) {
+                        publishProgress((uploadedBytes/totalBytes)*100)
+                   }
+               })
+            }catch (e:InterruptedException){
+                 e.printStackTrace()
+                return null
+            }catch (e:XMPPException.XMPPErrorException){
+                e.printStackTrace()
+                return null
+            }catch (e:SmackException){
+                e.printStackTrace()
+                return null
+            }catch (e:IOException){
+                e.printStackTrace()
+                return null
+            }
+
+        }
+
+       override fun onPostExecute(result: URL?) {
+           super.onPostExecute(result)
+       }
+
+       override fun onProgressUpdate(vararg values: Long?) {
+           super.onProgressUpdate(*values)
+       }
     }
 
 
@@ -89,7 +135,7 @@ class NetworkConnection(context: Context):ConnectionListener {
             e.printStackTrace()
         }
 
-
+          httpFileUploadManager= HttpFileUploadManager.getInstanceFor(mConnection)
 
 
         ChatManager.getInstanceFor(mConnection).addIncomingListener(object :IncomingChatMessageListener{
@@ -233,6 +279,4 @@ class NetworkConnection(context: Context):ConnectionListener {
         NetworkConnectionService.sConnectionState = ConnectionState.CONNECTED
         Log.d(TAG,"ReconnectionSuccessful")
     }
-
-
 }

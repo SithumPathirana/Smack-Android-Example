@@ -4,24 +4,81 @@ import android.support.v7.widget.RecyclerView
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import com.example.smackandroid.R
 import com.example.smackandroid.modal.Message
-
-
+import com.example.smackandroid.modal.Type
 
 
 class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.Adapter<RecyclerView.ViewHolder>(){
 
 
+    companion object {
+        private const val RECEIVED=1
+        private const val SENT=2
+        private const val IMAGE_SENT = 3
+        private const val IMAGE_RECEIVED = 4
+        private const val AUDIO_SENT = 5
+        private const val AUDIO_RECEIVED = 6
+        private const val VIDEO_SENT = 7
+        private const val VIDEO_RECEIVED = 8
+        private const val PDF_SENT = 9
+        private const val PDF_RECEIVED = 10
+        private const val OFFICE_SENT = 11
+        private const val OFFICE_RECEIVED = 12
+        private const val OTHER_SENT = 13
+        private const val OTHER_RECEIVED = 14
+
+    }
+
+
     override fun getItemViewType(position: Int): Int {
 
-      return  if (messageList[position].sentByUser){
-             1
-        }else{
-             0
+        if (messageList[position].type== Type.SENT){
+           return   SENT
+        }
+        if(messageList[position].type==Type.RECEIVED){
+          return   RECEIVED
+        }
+        if (messageList[position].type==Type.IMAGE_SENT){
+            return IMAGE_SENT
+        }
+        if (messageList[position].type==Type.IMAGE_RECEIVED){
+            return IMAGE_RECEIVED
+        }
+        if (messageList[position].type==Type.AUDIO_SENT){
+            return AUDIO_SENT
+        }
+        if (messageList[position].type==Type.AUDIO_RECEIVED){
+            return AUDIO_RECEIVED
+        }
+        if (messageList[position].type==Type.VIDEO_SENT){
+            return VIDEO_SENT
+        }
+        if (messageList[position].type==Type.VIDEO_RECEIVED){
+            return VIDEO_RECEIVED
+        }
+        if (messageList[position].type==Type.PDF_SENT){
+            return PDF_SENT
+        }
+        if (messageList[position].type==Type.PDF_RECEIVED){
+            return PDF_RECEIVED
+        }
+        if (messageList[position].type==Type.OFFICE_SENT){
+            return OFFICE_SENT
+        }
+        if (messageList[position].type==Type.OFFICE_RECEIVED){
+            return OFFICE_RECEIVED
+        }
+        if (messageList[position].type==Type.OTHER_SENT){
+            return OTHER_SENT
+        }
+        if (messageList[position].type==Type.OTHER_RECEIVED){
+            return OTHER_RECEIVED
         }
 
+        return SENT
 
     }
 
@@ -31,20 +88,108 @@ class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.A
 
     override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         when(holder.itemViewType){
-              1 -> bindMyMessageViewHolder(holder,position)
-              0 -> bindTheirMessageViewHolder(holder,position)
+              SENT -> bindMessage(holder,messageList[position])
+              RECEIVED -> bindMessage(holder,messageList[position])
+              IMAGE_SENT -> bindMessage(holder,messageList[position])
+              IMAGE_RECEIVED -> bindMessage(holder,messageList[position])
+              AUDIO_SENT -> bindMessage(holder,messageList[position])
+              AUDIO_RECEIVED -> bindMessage(holder,messageList[position])
+              VIDEO_SENT -> bindMessage(holder,messageList[position])
+              VIDEO_RECEIVED -> bindMessage(holder,messageList[position])
+              PDF_SENT -> bindMessage(holder,messageList[position])
+              PDF_RECEIVED -> bindMessage(holder,messageList[position])
+              OFFICE_SENT -> bindMessage(holder,messageList[position])
+              OFFICE_RECEIVED -> bindMessage(holder,messageList[position])
+              OTHER_SENT -> bindMessage(holder,messageList[position])
+               OTHER_RECEIVED -> bindMessage(holder,messageList[position])
         }
     }
 
+    private fun bindMessage(holder: RecyclerView.ViewHolder,message:Message){
+          val type=message.type
 
-    private fun bindMyMessageViewHolder(holder: RecyclerView.ViewHolder,position: Int){
-         val a= holder as MyMessgeVeiwHolder
-         a.myMessage?.text=messageList[position].text
-    }
+          if (type==Type.SENT){
+              val messageHolder= holder as MyMessgeVeiwHolder
+              messageHolder.myMessage?.text=message.text
+          }
 
-    private fun bindTheirMessageViewHolder(holder: RecyclerView.ViewHolder,position: Int){
-        val a= holder as TheirMessageViewHolder
-        a.theirMessage?.text=messageList[position].text
+          if (type==Type.RECEIVED){
+              val messageHolder= holder as TheirMessageViewHolder
+              messageHolder.theirMessage?.text=message.text
+          }
+
+          if (type==Type.IMAGE_SENT){
+              val imageHolder= holder as ImageSentViewHolder
+              imageHolder.myImage?.setImageResource(R.drawable.ic_profile)
+          }
+
+          if (type==Type.IMAGE_RECEIVED){
+              val imageHolder= holder as ImageReceievedViewHolder
+              imageHolder.theirImage?.setImageResource(R.drawable.ic_profile)
+          }
+
+          if (type==Type.VIDEO_SENT){
+              val videoHolder= holder as VideoSentViewHolder
+              videoHolder.myImage?.setImageResource(R.drawable.ic_profile)
+          }
+
+          if (type==Type.VIDEO_RECEIVED){
+              val videoHolder= holder as VideoReceivedViewHolder
+              videoHolder.theirImage?.setImageResource(R.drawable.ic_profile)
+          }
+
+         if (type==Type.AUDIO_SENT){
+              val otherViewHolder= holder as OtherItemsSentViewHolder
+              otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_audio_48dp)
+             otherViewHolder.attachmentFileName?.text="Sent Audio File"
+         }
+
+        if (type==Type.AUDIO_RECEIVED){
+            val otherViewHolder= holder as OtherItemsReceivedViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_audio_48dp)
+            otherViewHolder.attachmentFileName?.text="Received Audio File"
+        }
+
+        if (type==Type.OFFICE_SENT){
+            val otherViewHolder= holder as OtherItemsSentViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_document_48dp)
+            otherViewHolder.attachmentFileName?.text="Sent Office File"
+        }
+
+        if (type==Type.OFFICE_RECEIVED){
+            val otherViewHolder= holder as OtherItemsReceivedViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_document_48dp)
+            otherViewHolder.attachmentFileName?.text="Received Office File"
+        }
+
+        if (type==Type.PDF_SENT){
+            val otherViewHolder= holder as OtherItemsSentViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
+            otherViewHolder.attachmentFileName?.text="Sent Pdf File"
+        }
+
+        if (type==Type.PDF_RECEIVED){
+            val otherViewHolder= holder as OtherItemsReceivedViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
+            otherViewHolder.attachmentFileName?.text="Received Pdf File"
+        }
+
+        if (type==Type.OTHER_SENT){
+            val otherViewHolder= holder as OtherItemsSentViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
+            otherViewHolder.attachmentFileName?.text="Sent Other File"
+        }
+
+        if (type==Type.OTHER_RECEIVED){
+            val otherViewHolder= holder as OtherItemsReceivedViewHolder
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
+            otherViewHolder.attachmentFileName?.text="Received Other File"
+        }
+
+
+
+
+
     }
 
 
@@ -53,8 +198,20 @@ class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.A
         var viewHolder:RecyclerView.ViewHolder?=null
 
         when(viewType){
-            1 ->  viewHolder= MyMessgeVeiwHolder(LayoutInflater.from(parent.context).inflate(R.layout.my_message, parent, false))
-            0 ->  viewHolder =TheirMessageViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.their_message, parent, false))
+            SENT ->  viewHolder= MyMessgeVeiwHolder(LayoutInflater.from(parent.context).inflate(R.layout.my_message, parent, false))
+            RECEIVED ->  viewHolder = TheirMessageViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.their_message, parent, false))
+            IMAGE_SENT ->  viewHolder = ImageSentViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.chat_message_image_sent, parent, false))
+            IMAGE_RECEIVED ->  viewHolder = ImageReceievedViewHolder (LayoutInflater.from(parent.context).inflate(R.layout.chat_message_image_recieved, parent, false))
+            VIDEO_SENT ->  viewHolder = VideoSentViewHolder (LayoutInflater.from(parent.context).inflate(R.layout.chat_message_video_sent, parent, false))
+            VIDEO_RECEIVED ->  viewHolder = VideoReceivedViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.chat_message_video_recived, parent, false))
+            AUDIO_SENT ->    viewHolder = OtherItemsSentViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_sent, parent, false))
+            AUDIO_RECEIVED -> viewHolder = OtherItemsReceivedViewHolder (LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_recived, parent, false))
+            PDF_SENT -> viewHolder = OtherItemsSentViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_sent, parent, false))
+            PDF_RECEIVED -> viewHolder = OtherItemsReceivedViewHolder (LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_recived, parent, false))
+            OFFICE_SENT -> viewHolder = OtherItemsSentViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_sent, parent, false))
+            OFFICE_RECEIVED -> viewHolder = OtherItemsReceivedViewHolder (LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_recived, parent, false))
+            OTHER_SENT -> viewHolder = OtherItemsSentViewHolder(LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_sent, parent, false))
+            OTHER_RECEIVED -> viewHolder = OtherItemsReceivedViewHolder (LayoutInflater.from(parent.context).inflate(R.layout.chat_message_file_recived, parent, false))
         }
          return viewHolder!!
     }
@@ -64,7 +221,7 @@ class MyMessgeVeiwHolder(view: View):RecyclerView.ViewHolder(view){
      var myMessage:TextView?=null
 
     init {
-        myMessage=view.findViewById(R.id.my_message_body)
+         myMessage=view.findViewById(R.id.my_message_body)
 
     }
 }
@@ -77,4 +234,69 @@ class TheirMessageViewHolder(view: View):RecyclerView.ViewHolder(view){
         theirMessage=view.findViewById(R.id.their_message_body)
     }
 }
+
+class ImageSentViewHolder(view: View):RecyclerView.ViewHolder(view){
+    var myImage:ImageView?=null
+
+    init {
+        myImage=view.findViewById(R.id.sent_image)
+
+    }
+}
+
+
+class ImageReceievedViewHolder(view: View):RecyclerView.ViewHolder(view){
+    var theirImage:ImageView?=null
+
+    init {
+        theirImage=view.findViewById(R.id.received_image)
+
+    }
+}
+
+class VideoSentViewHolder(view: View):RecyclerView.ViewHolder(view){
+    var myImage:ImageView?=null
+
+    init {
+        myImage=view.findViewById(R.id.video_sent)
+
+    }
+}
+
+class VideoReceivedViewHolder(view: View):RecyclerView.ViewHolder(view){
+    var theirImage:ImageView?=null
+
+    init {
+        theirImage=view.findViewById(R.id.video_received)
+
+    }
+}
+
+class OtherItemsSentViewHolder(view: View):RecyclerView.ViewHolder(view){
+    var attachmentFileName:TextView?=null
+    var imageViewFileIcon:ImageView?=null
+
+    init {
+        attachmentFileName=view.findViewById(R.id.attachmentFileNameSent)
+        imageViewFileIcon=view.findViewById(R.id.imageViewFileIconSent)
+    }
+}
+
+class OtherItemsReceivedViewHolder(view: View):RecyclerView.ViewHolder(view){
+    var attachmentFileName:TextView?=null
+    var imageViewFileIcon:ImageView?=null
+
+    init {
+        attachmentFileName=view.findViewById(R.id.attachmentFileNameReceived)
+        imageViewFileIcon=view.findViewById(R.id.imageViewFileIconReceived)
+    }
+}
+
+
+
+
+
+
+
+
 
