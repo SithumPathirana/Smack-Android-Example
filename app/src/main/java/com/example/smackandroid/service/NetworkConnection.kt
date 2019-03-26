@@ -18,16 +18,18 @@ import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.chat2.Chat
 import org.jivesoftware.smack.chat2.ChatManager
 import org.jivesoftware.smack.chat2.IncomingChatMessageListener
-import org.jivesoftware.smack.packet.Message
 import org.jivesoftware.smack.roster.Roster
 import org.jivesoftware.smackx.httpfileupload.HttpFileUploadManager
 import org.jivesoftware.smackx.httpfileupload.UploadProgressListener
-import java.io.IOException
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.stringprep.XmppStringprepException
-import java.io.File
 import java.net.URL
+import com.example.smackandroid.modal.ChatMessage
+import com.example.smackandroid.util.Utilities
+import org.jivesoftware.smack.packet.Message
+import java.io.*
+import java.net.HttpURLConnection
 
 
 class NetworkConnection(context: Context):ConnectionListener {
@@ -51,6 +53,8 @@ class NetworkConnection(context: Context):ConnectionListener {
     }
 
    inner class FileUploadTask:AsyncTask<String,Long,URL>(){
+
+
 
        private var fileFullPath:String?=null
        private var counterPartJid:String?=null
@@ -82,12 +86,140 @@ class NetworkConnection(context: Context):ConnectionListener {
         }
 
        override fun onPostExecute(result: URL?) {
+           if (result!=null){
+               Log.d("FileUploadTask","File upload is done,File get Url is : $result" +
+                       ",File full path is : $fileFullPath"+
+                       ",ConterpartJid is : $counterPartJid"
+
+               )
+
+               val chatMessage=ChatMessage(result.toString(),Utilities.getMessageTypeFromFileFullPath(fileFullPath!!,true),counterPartJid!!,fileFullPath!!)
+
+               if (sendMessage(chatMessage)){
+                   Log.d(
+                       "UploadTask ", "File message : "  +
+                               " successfully sent to " + chatMessage.contactJid
+                   )
+               }else{
+                   Log.d(
+                       "UploadTask ", "Something went wrong while sending message : " +
+                               " to " + chatMessage.contactJid
+                   )
+               }
+           }else{
+               Log.d("UploadTask", "File upload Failed.")
+           }
            super.onPostExecute(result)
        }
 
        override fun onProgressUpdate(vararg values: Long?) {
+           Log.d("FileUploadTask","Progress : ${values[0]}")
            super.onProgressUpdate(*values)
        }
+    }
+
+
+    inner class  FileDownloadTask:AsyncTask<String,Int,String>(){
+
+        var inputUrl:String?=null
+        var inputFileName:String?=null
+        var inputRootPathString:String?=null
+        var inputContactJid:String?=null
+
+        override fun doInBackground(vararg params: String?): String? {
+            inputUrl=params[0]
+            inputFileName=params[1]
+            inputRootPathString=params[2]
+            inputContactJid=params[3]
+
+            var input:InputStream?=null
+            var output:OutputStream?=null
+            var connection:HttpURLConnection?=null
+
+
+            try {
+                val url=URL(params[0])
+                connection=url.openConnection() as HttpURLConnection
+                connection.connect()
+
+                // To Avoid Saving Error Report Instead Of the file
+
+                if (connection.responseCode != HttpURLConnection.HTTP_OK){
+                    val error="Server returned HTTP ${connection.responseCode}  ${connection.responseMessage}"
+                    Log.d("DownloadFileTask",error)
+                    return null
+                }
+
+                // Will be able to get the download percentage
+                val fileLength=connection.contentLength
+
+                // Download the file
+                input=connection.inputStream
+                Log.d(
+                    "DownloadFileTask",
+                    " Inside doInbackground ,File will be saved to : $inputRootPathString/$inputFileName"
+                )
+                output=FileOutputStream("$inputRootPathString/$inputFileName")
+
+                val data = ByteArray(4096)
+                var total: Long = 0
+                var count=0
+
+                while (count != -1) {
+                    count=input.read(data)
+                    // allow canceling with back button
+                    if (isCancelled) {
+                        input.close()
+                        return null
+                    }
+                    total += count.toLong()
+                    // publishing the progress....
+                    if (fileLength > 0)
+                    // only if total length is known
+                        publishProgress((total * 100 / fileLength).toInt())
+                    output.write(data, 0, count)
+                }
+            }catch (e:Exception){
+                return null
+            }finally {
+                try {
+                     if (output!=null){
+                         output.close()
+                     }
+                     if (input!=null){
+                         input.close()
+                     }
+                }catch (ignored:IOException){
+
+                }
+
+                if (connection!=null){
+                      connection.disconnect()
+                }
+            }
+            return "$inputRootPathString/$inputFileName"
+        }
+
+        override fun onProgressUpdate(vararg values: Int?) {
+            Log.d("DownloadFileTask","Progress : ${values[0]}")
+            super.onProgressUpdate(*values)
+        }
+
+        override fun onPostExecute(result: String?) {
+
+            if (result!=null){
+                Log.d(
+                    "DownloadFileTask",
+                    " File download was successful, file saved to :$inputRootPathString/$inputFileName"
+                )
+
+
+            }
+
+
+            super.onPostExecute(result)
+        }
+
     }
 
 
@@ -232,13 +364,58 @@ class NetworkConnection(context: Context):ConnectionListener {
             val message=Message(jid,Message.Type.chat)
             message.body=body
             chat.send(message)
-
+            Log.d(TAG,"Message sent successfully to ${jid.toString()}")
 
         }catch (e:SmackException.NotConnectedException){
             e.printStackTrace()
         }catch (e: InterruptedException){
             e.printStackTrace()
         }
+    }
+
+
+    private fun sendMessage(chatMessage:ChatMessage):Boolean{
+         Log.d(TAG,"Sending message to ${chatMessage.contactJid}")
+
+        var jid:EntityBareJid?=null
+        val chatManager=ChatManager.getInstanceFor(mConnection)
+
+        try {
+             jid=JidCreate.entityBareFrom(chatMessage.contactJid)
+        }catch (e:XmppStringprepException){
+            e.printStackTrace()
+            return false
+        }
+
+        val chat=chatManager.chatWith(jid)
+        try {
+            val message=Message(jid,Message.Type.chat)
+            message.body=chatMessage.text
+            chat.send(message)
+            informChatViewRecycler(chatMessage)
+            return true
+        }catch (e:SmackException.NotConnectedException){
+            e.printStackTrace()
+            return false
+        }catch (e:InterruptedException){
+            e.printStackTrace()
+            return false
+        }
+    }
+
+    private fun informChatViewRecycler(chatMessage: ChatMessage){
+            val intent=Intent(NetworkConnectionService.UI_NEW_MESSAGE_FLAG)
+            intent.setPackage(mApplicationContext?.packageName)
+            intent.putExtra(NetworkConnectionService.BUNDLE_MESSAGE_TYPE,chatMessage.type.toString())
+            intent.putExtra(NetworkConnectionService.BUNDLE_MESSAGE_ATTACHMENT_PATH,chatMessage.attachmentPath)
+            mApplicationContext?.sendBroadcast(intent)
+    }
+
+
+    fun sendFile(fileFullPath:String,counterPartJid:String){
+          val fileUploadTask=FileUploadTask()
+          fileUploadTask.execute(fileFullPath,counterPartJid)
+
     }
 
 

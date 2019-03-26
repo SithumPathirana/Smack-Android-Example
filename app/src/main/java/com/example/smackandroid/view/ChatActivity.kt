@@ -19,7 +19,7 @@ import android.support.v7.widget.RecyclerView
 import android.view.Menu
 import android.view.MenuItem
 import android.widget.EditText
-import com.example.smackandroid.modal.Message
+import com.example.smackandroid.modal.ChatMessage
 import com.example.smackandroid.modal.Type
 import com.example.smackandroid.util.RealPathUtil
 
@@ -41,7 +41,7 @@ class ChatActivity : AppCompatActivity() {
 
 
     private lateinit var messageBody: EditText
-    private var messagesList= arrayListOf<Message>()
+    private var messagesList= arrayListOf<ChatMessage>()
     lateinit var messageListView: RecyclerView
     private var adapter: RecyclerView.Adapter<*>? = null
     private var layoutManager: RecyclerView.LayoutManager? = null
@@ -71,17 +71,17 @@ class ChatActivity : AppCompatActivity() {
         mBroadcastReceiver=object :BroadcastReceiver(){
             override fun onReceive(context: Context?, intent: Intent?) {
                 val acion=intent?.action
-                val from=intent?.getStringExtra(NetworkConnectionService.BUNDLE_FROM_JID)
-                val body=intent?.getStringExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY)
 
                 when(acion){
-                    NetworkConnectionService.NEW_MESSAGE ->  recieveMessgesAndUpdateChatView(from!!,body!!)
+                    NetworkConnectionService.NEW_MESSAGE ->  recieveMessgesAndUpdateChatView(intent)
+                    NetworkConnectionService.UI_NEW_MESSAGE_FLAG -> updateChatUI(intent)
 
                 }
             }
         }
 
         val filter = IntentFilter(NetworkConnectionService.NEW_MESSAGE)
+        filter.addAction(NetworkConnectionService.UI_NEW_MESSAGE_FLAG)
         registerReceiver(mBroadcastReceiver, filter)
     }
 
@@ -103,18 +103,14 @@ class ChatActivity : AppCompatActivity() {
            }
            R.id.send_image ->  {
                val insertIndex = 0
-               messagesList.add(insertIndex,Message("Send Image",Type.IMAGE_SENT) )
+               messagesList.add(insertIndex, ChatMessage("Send Image",Type.IMAGE_SENT,contactJID!!,"") )
                adapter?.notifyItemInserted(insertIndex)
            }
            R.id.receive_video ->  {
-               val insertIndex = 0
-               messagesList.add(insertIndex,Message("Receive Video",Type.VIDEO_RECEIVED) )
-               adapter?.notifyItemInserted(insertIndex)
+
            }
            R.id.send_office -> {
-               val insertIndex = 0
-               messagesList.add(insertIndex,Message("Office Sent",Type.OFFICE_SENT) )
-               adapter?.notifyItemInserted(insertIndex)
+
            }
 
            R.id.send_file -> {
@@ -138,7 +134,7 @@ class ChatActivity : AppCompatActivity() {
 
             val message = typedMessage.text.toString()
             val insertIndex = 0
-            messagesList.add(insertIndex,Message(message,Type.SENT) )
+            messagesList.add(insertIndex, ChatMessage(message,Type.SENT,contactJID!!,"") )
             adapter?.notifyItemInserted(insertIndex)
             messageBody.text.clear()
         }else{
@@ -146,20 +142,50 @@ class ChatActivity : AppCompatActivity() {
         }
     }
 
-    private fun recieveMessgesAndUpdateChatView(from:String,body:String){
+    private fun recieveMessgesAndUpdateChatView(intent: Intent){
+
+        val from=intent?.getStringExtra(NetworkConnectionService.BUNDLE_FROM_JID)
+        val body=intent?.getStringExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY)
+
         if (from==contactJID){
            Log.d(TAG,"New message recieved from $contactJID")
             Log.d(TAG,"Message Body $body")
 
 
             val insertIndex = 0
-            messagesList.add(insertIndex,Message(body, Type.RECEIVED) )
+            messagesList.add(insertIndex, ChatMessage(body, Type.RECEIVED,contactJID!!,"") )
             adapter?.notifyItemInserted(insertIndex)
 
         }else{
             Log.d(TAG,"Got a message from another jid : $contactJID")
         }
 
+    }
+
+
+    private fun updateChatUI(intent: Intent){
+        val messageType=intent?.getStringExtra(NetworkConnectionService.BUNDLE_MESSAGE_TYPE)
+        val attachmentPath=intent?.getStringExtra(NetworkConnectionService.BUNDLE_MESSAGE_ATTACHMENT_PATH)
+        Log.d(TAG,"Bundle message type is  : $messageType")
+        Log.d(TAG,"Bundle message attachment path $attachmentPath")
+
+        if (messageType==Type.IMAGE_SENT.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.IMAGE_SENT,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+        if (messageType==Type.VIDEO_SENT.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.VIDEO_SENT,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+        if (messageType==Type.PDF_SENT.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.PDF_SENT,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
     }
 
 
@@ -188,7 +214,7 @@ class ChatActivity : AppCompatActivity() {
                         return
                     }
 
-                    NetworkConnectionService
+                    NetworkConnectionService.getConnection().sendFile(filePath,contactJID!!)
                 }
             }
         }

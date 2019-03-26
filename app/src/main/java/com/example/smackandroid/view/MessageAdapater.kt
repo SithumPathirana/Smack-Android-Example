@@ -1,17 +1,22 @@
 package com.example.smackandroid.view
 
+import android.graphics.BitmapFactory
+import android.media.ThumbnailUtils
+import android.provider.MediaStore
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import com.example.smackandroid.R
-import com.example.smackandroid.modal.Message
+import com.example.smackandroid.modal.ChatMessage
 import com.example.smackandroid.modal.Type
+import java.io.File
 
 
-class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.Adapter<RecyclerView.ViewHolder>(){
+class MessageAdapater(private val messageList:ArrayList<ChatMessage>):RecyclerView.Adapter<RecyclerView.ViewHolder>(){
 
 
     companion object {
@@ -29,6 +34,8 @@ class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.A
         private const val OFFICE_RECEIVED = 12
         private const val OTHER_SENT = 13
         private const val OTHER_RECEIVED = 14
+
+        private val TAG="MessageAdapter"
 
     }
 
@@ -105,7 +112,7 @@ class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.A
         }
     }
 
-    private fun bindMessage(holder: RecyclerView.ViewHolder,message:Message){
+    private fun bindMessage(holder: RecyclerView.ViewHolder,message:ChatMessage){
           val type=message.type
 
           if (type==Type.SENT){
@@ -176,14 +183,75 @@ class MessageAdapater(private val messageList:ArrayList<Message>):RecyclerView.A
 
         if (type==Type.OTHER_SENT){
             val otherViewHolder= holder as OtherItemsSentViewHolder
-            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_attachment_black_48dp)
             otherViewHolder.attachmentFileName?.text="Sent Other File"
         }
 
         if (type==Type.OTHER_RECEIVED){
             val otherViewHolder= holder as OtherItemsReceivedViewHolder
-            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
+            otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_attachment_black_48dp)
             otherViewHolder.attachmentFileName?.text="Received Other File"
+        }
+
+
+        // For images just show the image preview
+        if (type==Type.IMAGE_SENT){
+             val file =File(message.attachmentPath)
+             val imageHolder=holder as ImageSentViewHolder
+
+             if (!file.exists()){
+                 Log.d(TAG, "Image File does not exist")
+                 imageHolder.myImage?.setImageResource(R.drawable.ic_picture_as_file_deleted_48dp)
+             }else{
+                 val bitmap = BitmapFactory.decodeFile(message.attachmentPath)
+                 imageHolder.myImage?.setImageBitmap(bitmap)
+             }
+        }
+
+        if (type==Type.IMAGE_RECEIVED){
+            val file =File(message.attachmentPath)
+            val imageHolder=holder as ImageReceievedViewHolder
+
+            if (!file.exists()){
+                Log.d(TAG, "Image File does not exist")
+                imageHolder.theirImage?.setImageResource(R.drawable.ic_picture_as_file_deleted_48dp)
+            }else{
+                val bitmap = BitmapFactory.decodeFile(message.attachmentPath)
+                imageHolder.theirImage?.setImageBitmap(bitmap)
+            }
+        }
+
+
+
+        // For videos extract the thumbnail
+        if (type==Type.VIDEO_SENT){
+            val file=File(message.attachmentPath)
+            val videoHolder= holder as VideoSentViewHolder
+            if (!file.exists()){
+                Log.d(TAG, "Video File does not exist")
+                videoHolder.myImage?.setImageResource(R.drawable.ic_picture_as_file_deleted_48dp)
+            }else{
+                val thumbnail = ThumbnailUtils.createVideoThumbnail(
+                    message.attachmentPath,
+                    MediaStore.Images.Thumbnails.MINI_KIND
+                )
+                videoHolder.myImage?.setImageBitmap(thumbnail)
+            }
+        }
+
+        if (type==Type.VIDEO_RECEIVED){
+            val file=File(message.attachmentPath)
+            val videoHolder= holder as VideoReceivedViewHolder
+            if (!file.exists()){
+                Log.d(TAG, "Video File does not exist")
+                videoHolder.theirImage ?.setImageResource(R.drawable.ic_picture_as_file_deleted_48dp)
+            }else{
+                val thumbnail = ThumbnailUtils.createVideoThumbnail(
+                    message.attachmentPath,
+                    MediaStore.Images.Thumbnails.MINI_KIND
+                )
+                videoHolder.theirImage?.setImageBitmap(thumbnail)
+            }
         }
 
 

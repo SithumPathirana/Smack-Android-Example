@@ -52,8 +52,8 @@ class ContactListActivity : AppCompatActivity() {
     }
 
     private fun addContacts():ArrayList<Contact>{
-        contactList.add(Contact("chathuminav@xmpp.jp"))
-        contactList.add(Contact("sithumk@xmpp.jp"))
+        contactList.add(Contact("chathuminav@xmpp.si"))
+        contactList.add(Contact("sithumk@xmpp.si"))
         contactList.add(Contact("user3@server.com"))
         contactList.add(Contact("user4@server.com"))
         contactList.add(Contact("user5@server.com"))

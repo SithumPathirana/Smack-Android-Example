@@ -1,6 +1,6 @@
 package com.example.smackandroid.modal
 
-class Message(val text:String,val type:Type)
+class ChatMessage(val text:String,val type:Type,val contactJid:String,val attachmentPath:String)
 
 enum class Type {
     SENT, RECEIVED,

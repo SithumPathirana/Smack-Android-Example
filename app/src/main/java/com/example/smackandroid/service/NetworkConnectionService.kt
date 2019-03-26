@@ -18,9 +18,11 @@ class NetworkConnectionService:Service(){
     private var mTHandler: Handler?=null//We use this handler to post messages to
     //the background thread.
 
-    private var mConnection: NetworkConnection? = null
+
 
     companion object {
+
+        private var mConnection: NetworkConnection? = null
 
         const val TAG="NetworkConnection"
 
@@ -31,6 +33,9 @@ class NetworkConnectionService:Service(){
 
        const val NEW_MESSAGE = "com.blikoon.rooster.newmessage"
        const  val BUNDLE_FROM_JID = "b_from"
+        const  val BUNDLE_MESSAGE_TYPE = "b_type"
+        const  val BUNDLE_MESSAGE_ATTACHMENT_PATH = "b_attachment_path"
+        const val UI_NEW_MESSAGE_FLAG = "com.blikoon.roosterplus.ui_new_message_flag"
 
 
 
@@ -49,6 +54,10 @@ class NetworkConnectionService:Service(){
             return if (sLoggedInState == null) {
                 NetworkConnection.LoggedInState.LOGGED_OUT
             } else sLoggedInState!!
+        }
+
+        fun getConnection():NetworkConnection{
+            return mConnection!!
         }
     }
 
