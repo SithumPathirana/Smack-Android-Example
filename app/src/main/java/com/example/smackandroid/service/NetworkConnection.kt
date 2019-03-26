@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.AsyncTask
+import android.os.Environment
 import android.preference.PreferenceManager
 import android.util.Log
 import org.jivesoftware.smack.ConnectionListener
@@ -26,10 +27,12 @@ import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.stringprep.XmppStringprepException
 import java.net.URL
 import com.example.smackandroid.modal.ChatMessage
+import com.example.smackandroid.util.MimeUtils
 import com.example.smackandroid.util.Utilities
 import org.jivesoftware.smack.packet.Message
 import java.io.*
 import java.net.HttpURLConnection
+import java.net.MalformedURLException
 
 
 class NetworkConnection(context: Context):ConnectionListener {
@@ -213,7 +216,19 @@ class NetworkConnection(context: Context):ConnectionListener {
                     " File download was successful, file saved to :$inputRootPathString/$inputFileName"
                 )
 
+                val file=File("$inputRootPathString/$inputFileName")
 
+                if (file.exists()){
+                    Log.d("DownloadFileTask", " File exists :$inputRootPathString/$inputFileName")
+                    val message=ChatMessage(
+                        inputUrl!!,
+                        Utilities.getMessageTypeFromFileFullPath("$inputRootPathString/$inputFileName", false)
+                        ,inputContactJid!!
+                        ,"$inputRootPathString/$inputFileName")
+
+                    informChatViewRecycler(message)
+
+                }
             }
 
 
@@ -416,6 +431,40 @@ class NetworkConnection(context: Context):ConnectionListener {
           val fileUploadTask=FileUploadTask()
           fileUploadTask.execute(fileFullPath,counterPartJid)
 
+    }
+
+    fun downloadFileFromServer(fileUrl:String,contactJid:String){
+            var url:URL?=null
+
+            try {
+                url= URL(fileUrl)
+            }catch (e:MalformedURLException){
+                e.printStackTrace()
+                return
+            }
+
+            val extension=MimeUtils.extractRelevantExtension(url)
+            val fileName=fileUrl.substring(fileUrl.lastIndexOf('/')+1)
+
+           if(extension!=null){
+                 Log.d(TAG,"Received extension is not null,Filename is : $fileName")
+
+               // Create the filepath on the device
+               var rootPath:File?=null
+
+               if (MimeUtils.isFileAudio(extension)){
+                   rootPath= File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MOVIES),"SmackAndroidPlus")
+
+               }else if (MimeUtils.isFileAudio(extension)){
+                   rootPath=File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_MUSIC),"SmackAndroidPlus")
+               }else if (MimeUtils.isFileImage(extension)){
+                   rootPath= File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),"SmacAndroidPlus")
+               }else if (MimeUtils.isFileDocument(extension)){
+                   rootPath= File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),"SmacAndroidPlus")
+               }else{
+                   rootPath= File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"SmacAndroidPlus")
+               }
+           }
     }
 
 
