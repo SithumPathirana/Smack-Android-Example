@@ -11,6 +11,12 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 
+
+
+/**
+ * https://gist.github.com/tatocaster/32aad15f6e0c50311626
+ */
+
 class RealPathUtil{
 
     companion object {
