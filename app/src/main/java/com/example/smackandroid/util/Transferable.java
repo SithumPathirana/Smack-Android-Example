@@ -1,4 +1,4 @@
-package com.blikoon.roosterplus;
+package com.example.smackandroid.util;
 
 
 import java.util.Arrays;
