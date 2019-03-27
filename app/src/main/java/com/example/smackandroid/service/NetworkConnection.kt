@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.net.Uri
 import android.os.AsyncTask
 import android.os.Environment
 import android.preference.PreferenceManager
@@ -27,6 +28,7 @@ import org.jxmpp.jid.EntityBareJid
 import org.jxmpp.stringprep.XmppStringprepException
 import java.net.URL
 import com.example.smackandroid.modal.ChatMessage
+import com.example.smackandroid.modal.Type
 import com.example.smackandroid.util.MimeUtils
 import com.example.smackandroid.util.Utilities
 import org.jivesoftware.smack.packet.Message
@@ -167,9 +169,12 @@ class NetworkConnection(context: Context):ConnectionListener {
                 val data = ByteArray(4096)
                 var total: Long = 0
                 var count=0
-
-                while (count != -1) {
+                while (count  != -1) {
                     count=input.read(data)
+
+                    if (count==-1){
+                        break
+                    }
                     // allow canceling with back button
                     if (isCancelled) {
                         input.close()
@@ -228,11 +233,26 @@ class NetworkConnection(context: Context):ConnectionListener {
 
                     informChatViewRecycler(message)
 
+                    //Cause a scan for the image to show up in gallery,only videos and images
+                    if (message.type === Type.VIDEO_RECEIVED || message.type === Type.IMAGE_RECEIVED) {
+                        val mediaScanIntent = Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE)
+                        val f = File("$inputRootPathString/$inputFileName")
+                        val contentUri = Uri.fromFile(f)
+                        mediaScanIntent.data = contentUri
+                        mApplicationContext?.sendBroadcast(mediaScanIntent)
+                    }
+
+
+                }else{
+                    Log.d("DownloadFileTask", "File does not exist :$inputRootPathString/$inputFileName")
+                    return
                 }
+            }else{
+                Log.d("DownloadFileTask", "Something went wrong while downloading file :$inputUrl")
             }
 
 
-            super.onPostExecute(result)
+           // super.onPostExecute(result)
         }
 
     }
@@ -300,15 +320,22 @@ class NetworkConnection(context: Context):ConnectionListener {
                 }else{
                      contactJid=from
                 }
-                // Bundle up the intent and send broadcast
-                 val intent = Intent(NetworkConnectionService.NEW_MESSAGE)
-            intent.setPackage(mApplicationContext?.packageName)
-            intent.putExtra(NetworkConnectionService.BUNDLE_FROM_JID,contactJid)
-            intent.putExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY,message?.body)
-            mApplicationContext?.sendBroadcast(intent)
-            Log.d(TAG,"Received message from :$contactJid broadcast sent.")
-            ///ADDED
 
+                // Check if the received file is a Url
+                if (Utilities.isStringFileUrl(message!!.body)){
+
+                    downloadFileFromServer(message.body,contactJid)
+
+                }else{
+                    // Bundle up the intent and send broadcast
+                    val intent = Intent(NetworkConnectionService.NEW_MESSAGE)
+                    intent.setPackage(mApplicationContext?.packageName)
+                    intent.putExtra(NetworkConnectionService.BUNDLE_FROM_JID,contactJid)
+                    intent.putExtra(NetworkConnectionService.BUNDLE_MESSAGE_BODY,message?.body)
+                    mApplicationContext?.sendBroadcast(intent)
+                    Log.d(TAG,"Received message from :$contactJid broadcast sent.")
+                    ///ADDED
+                }
             }
         })
 
@@ -464,6 +491,19 @@ class NetworkConnection(context: Context):ConnectionListener {
                }else{
                    rootPath= File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),"SmacAndroidPlus")
                }
+
+               // Create a root directory if it is not there
+               if(!rootPath.exists()){
+                   if (rootPath.mkdirs()){
+                       Log.d(TAG,"Files directory created successfully : ${rootPath.absolutePath}" )
+                   }else{
+                       Log.d(TAG,"Could not create files directory : ${rootPath.absolutePath}" )
+                   }
+               }
+
+               // Pass over to the Async task to download
+               val downloadFileTask=FileDownloadTask()
+               downloadFileTask.execute(fileUrl,fileName,rootPath.absolutePath,contactJid)
            }
     }
 

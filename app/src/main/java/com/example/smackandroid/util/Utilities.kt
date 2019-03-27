@@ -1,6 +1,8 @@
 package com.example.smackandroid.util
 
 import com.example.smackandroid.modal.Type
+import java.net.MalformedURLException
+import java.net.URL
 
 class Utilities{
 
@@ -60,6 +62,41 @@ class Utilities{
                      }
                  }
         }
+
+
+        fun isStringFileUrl(messageBody: String): Boolean {
+            val url: URL
+            try {
+                url = URL(messageBody)
+            } catch (e: MalformedURLException) {
+                e.printStackTrace()
+                return false
+            }
+
+            val extension = MimeUtils.extractRelevantExtension(url)
+
+            return if (extension != null) {
+                if (extension == "html" || extension == "php" || extension == "jsp"
+                    || extension == "htm"
+                ) {
+                    false
+                } else true
+            } else {
+                false
+            }
+
+        }
+
+        fun getMimeType(path: String): String? {
+
+            val start = path.lastIndexOf('.') + 1
+            return if (start < path.length) {
+                MimeUtils.guessMimeTypeFromExtension(path.substring(start))
+            } else {
+                null
+            }
+        }
+
     }
 
 }

@@ -57,7 +57,7 @@ class ChatActivity : AppCompatActivity() {
         messageListView=messageList
         layoutManager=LinearLayoutManager(this)
         messageListView.layoutManager=layoutManager
-        adapter= MessageAdapater(messagesList)
+        adapter= MessageAdapater(messagesList,this)
         messageListView.adapter=adapter
     }
 
@@ -175,15 +175,59 @@ class ChatActivity : AppCompatActivity() {
             adapter?.notifyItemInserted(insertIndex)
         }
 
+        if (messageType==Type.IMAGE_RECEIVED.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.IMAGE_RECEIVED,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
         if (messageType==Type.VIDEO_SENT.toString()){
             val insertIndex = 0
             messagesList.add(insertIndex, ChatMessage("", Type.VIDEO_SENT,contactJID!!,attachmentPath) )
             adapter?.notifyItemInserted(insertIndex)
         }
 
+        if (messageType==Type.AUDIO_SENT.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.AUDIO_SENT,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+        if (messageType==Type.AUDIO_RECEIVED.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.AUDIO_RECEIVED,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+
+
+        if (messageType==Type.VIDEO_RECEIVED.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.VIDEO_RECEIVED,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
         if (messageType==Type.PDF_SENT.toString()){
             val insertIndex = 0
             messagesList.add(insertIndex, ChatMessage("", Type.PDF_SENT,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+        if (messageType==Type.PDF_RECEIVED.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.PDF_RECEIVED,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+        if (messageType==Type.OTHER_SENT.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.OTHER_SENT,contactJID!!,attachmentPath) )
+            adapter?.notifyItemInserted(insertIndex)
+        }
+
+        if (messageType==Type.OFFICE_RECEIVED.toString()){
+            val insertIndex = 0
+            messagesList.add(insertIndex, ChatMessage("", Type.OTHER_RECEIVED,contactJID!!,attachmentPath) )
             adapter?.notifyItemInserted(insertIndex)
         }
     }

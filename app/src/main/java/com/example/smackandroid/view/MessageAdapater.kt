@@ -1,8 +1,12 @@
 package com.example.smackandroid.view
 
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.graphics.BitmapFactory
 import android.media.ThumbnailUtils
 import android.provider.MediaStore
+import android.support.v4.content.FileProvider
 import android.support.v7.widget.RecyclerView
 import android.util.Log
 import android.view.LayoutInflater
@@ -10,13 +14,16 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
+import android.widget.Toast
+import com.example.smackandroid.BuildConfig
 import com.example.smackandroid.R
 import com.example.smackandroid.modal.ChatMessage
 import com.example.smackandroid.modal.Type
+import com.example.smackandroid.util.Utilities
 import java.io.File
 
 
-class MessageAdapater(private val messageList:ArrayList<ChatMessage>):RecyclerView.Adapter<RecyclerView.ViewHolder>(){
+class MessageAdapater(private val messageList:ArrayList<ChatMessage>,private val context:Context):RecyclerView.Adapter<RecyclerView.ViewHolder>(){
 
 
     companion object {
@@ -37,6 +44,13 @@ class MessageAdapater(private val messageList:ArrayList<ChatMessage>):RecyclerVi
 
         private val TAG="MessageAdapter"
 
+        private var shouldRecyclerViewScrollDown:Boolean?=null
+
+
+    }
+
+    init {
+        shouldRecyclerViewScrollDown=true
     }
 
 
@@ -118,6 +132,7 @@ class MessageAdapater(private val messageList:ArrayList<ChatMessage>):RecyclerVi
           if (type==Type.SENT){
               val messageHolder= holder as MyMessgeVeiwHolder
               messageHolder.myMessage?.text=message.text
+
           }
 
           if (type==Type.RECEIVED){
@@ -128,69 +143,124 @@ class MessageAdapater(private val messageList:ArrayList<ChatMessage>):RecyclerVi
           if (type==Type.IMAGE_SENT){
               val imageHolder= holder as ImageSentViewHolder
               imageHolder.myImage?.setImageResource(R.drawable.ic_profile)
+              imageHolder.myImage?.setOnClickListener(object :View.OnClickListener{
+                  override fun onClick(v: View?) {
+                    openFile(message)
+                  }
+              })
           }
 
           if (type==Type.IMAGE_RECEIVED){
               val imageHolder= holder as ImageReceievedViewHolder
               imageHolder.theirImage?.setImageResource(R.drawable.ic_profile)
+              imageHolder.theirImage?.setOnClickListener(object :View.OnClickListener{
+                  override fun onClick(v: View?) {
+                      openFile(message)
+                  }
+              })
           }
 
           if (type==Type.VIDEO_SENT){
               val videoHolder= holder as VideoSentViewHolder
               videoHolder.myImage?.setImageResource(R.drawable.ic_profile)
+              videoHolder.myImage?.setOnClickListener(object :View.OnClickListener{
+                  override fun onClick(v: View?) {
+                      openFile(message)
+                  }
+              })
           }
 
           if (type==Type.VIDEO_RECEIVED){
               val videoHolder= holder as VideoReceivedViewHolder
               videoHolder.theirImage?.setImageResource(R.drawable.ic_profile)
+              videoHolder.theirImage?.setOnClickListener(object :View.OnClickListener{
+                  override fun onClick(v: View?) {
+                      openFile(message)
+                  }
+              })
           }
 
          if (type==Type.AUDIO_SENT){
               val otherViewHolder= holder as OtherItemsSentViewHolder
               otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_audio_48dp)
-             otherViewHolder.attachmentFileName?.text="Sent Audio File"
+             otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                 override fun onClick(v: View?) {
+                     openFile(message)
+                 }
+             })
+
          }
 
         if (type==Type.AUDIO_RECEIVED){
             val otherViewHolder= holder as OtherItemsReceivedViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_audio_48dp)
-            otherViewHolder.attachmentFileName?.text="Received Audio File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
+
         }
 
         if (type==Type.OFFICE_SENT){
             val otherViewHolder= holder as OtherItemsSentViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_document_48dp)
-            otherViewHolder.attachmentFileName?.text="Sent Office File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
         }
 
         if (type==Type.OFFICE_RECEIVED){
             val otherViewHolder= holder as OtherItemsReceivedViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_document_48dp)
-            otherViewHolder.attachmentFileName?.text="Received Office File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
         }
 
         if (type==Type.PDF_SENT){
             val otherViewHolder= holder as OtherItemsSentViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
-            otherViewHolder.attachmentFileName?.text="Sent Pdf File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
         }
 
         if (type==Type.PDF_RECEIVED){
             val otherViewHolder= holder as OtherItemsReceivedViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_pdf_black_48dp)
-            otherViewHolder.attachmentFileName?.text="Received Pdf File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
+
         }
 
         if (type==Type.OTHER_SENT){
             val otherViewHolder= holder as OtherItemsSentViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_attachment_black_48dp)
-            otherViewHolder.attachmentFileName?.text="Sent Other File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
         }
 
         if (type==Type.OTHER_RECEIVED){
             val otherViewHolder= holder as OtherItemsReceivedViewHolder
             otherViewHolder.imageViewFileIcon?.setImageResource(R.drawable.ic_picture_as_attachment_black_48dp)
-            otherViewHolder.attachmentFileName?.text="Received Other File"
+            otherViewHolder.attachmentFileName?.setOnClickListener(object :View.OnClickListener{
+                override fun onClick(v: View?) {
+                    openFile(message)
+                }
+            })
         }
 
 
@@ -255,9 +325,89 @@ class MessageAdapater(private val messageList:ArrayList<ChatMessage>):RecyclerVi
         }
 
 
+        //For other files show the filename
+        if (type === Type.AUDIO_SENT ||
+            type === Type.OFFICE_SENT  ||
+            type === Type.PDF_SENT  ||
+            type === Type.OTHER_SENT
+        ) {
+            val file = File(message.attachmentPath)
+            val videoHolder= holder as OtherItemsSentViewHolder
+            if (file.exists()) {
+                videoHolder.attachmentFileName?.text =file.name
+
+            } else {
+                videoHolder.attachmentFileName?.text ="File has been deleted"
+
+            }
+
+        }
+
+        if (type === Type.AUDIO_RECEIVED ||
+            type === Type.OFFICE_RECEIVED  ||
+            type === Type.PDF_RECEIVED  ||
+            type === Type.OFFICE_RECEIVED
+        ) {
+            val file = File(message.attachmentPath)
+            val videoHolder= holder as OtherItemsReceivedViewHolder
+            if (file.exists()) {
+                videoHolder.attachmentFileName?.text =file.name
+
+            } else {
+                videoHolder.attachmentFileName?.text ="File has been deleted"
+
+            }
+
+        }
 
 
 
+
+    }
+
+
+    private fun openFile(message: ChatMessage){
+        Log.d(TAG,"User clicked on an item")
+
+        // We don't want to offer to open the file if that file does not exists
+        val attachmentFile=File(message.attachmentPath)
+        if (attachmentFile.exists()){
+
+            //Give the user the ability to open the file
+            val file = File(message.attachmentPath)
+
+            val uri = FileProvider.getUriForFile(
+                context,
+                BuildConfig.APPLICATION_ID + ".files",
+                file
+            )
+
+            val openIntent=Intent(Intent.ACTION_VIEW)
+            var mime=Utilities.getMimeType(file.absolutePath)
+            if (mime==null){
+                mime="*/*"
+            }
+
+            openIntent.setDataAndType(uri,mime)
+            openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+
+            val manager = context.packageManager
+            val info = manager.queryIntentActivities(openIntent, 0)
+
+            if (info.size==0){
+                openIntent.setDataAndType(uri,"*/*")
+
+            }
+
+            try {
+                shouldRecyclerViewScrollDown=false
+                context.startActivity(openIntent)
+            }catch (e:ActivityNotFoundException){
+                Toast.makeText(context,"No application found to open the file",Toast.LENGTH_SHORT).show()
+            }
+
+
+        }
     }
 
 
@@ -304,6 +454,11 @@ class TheirMessageViewHolder(view: View):RecyclerView.ViewHolder(view){
 }
 
 class ImageSentViewHolder(view: View):RecyclerView.ViewHolder(view){
+
+    companion object {
+        private val TAG="ImageSentViewHolder"
+    }
+
     var myImage:ImageView?=null
 
     init {
@@ -314,6 +469,11 @@ class ImageSentViewHolder(view: View):RecyclerView.ViewHolder(view){
 
 
 class ImageReceievedViewHolder(view: View):RecyclerView.ViewHolder(view){
+
+    companion object {
+        private val TAG="ImageReceivedViewHolder"
+    }
+
     var theirImage:ImageView?=null
 
     init {
