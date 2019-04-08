@@ -455,6 +455,7 @@ class NetworkConnection(context: Context):ConnectionListener {
 
 
     fun sendFile(fileFullPath:String,counterPartJid:String){
+          Log.d(TAG,"Send file called")
           val fileUploadTask=FileUploadTask()
           fileUploadTask.execute(fileFullPath,counterPartJid)
 
