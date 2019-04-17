@@ -32,6 +32,9 @@ import com.example.smackandroid.modal.Type
 import com.example.smackandroid.util.MimeUtils
 import com.example.smackandroid.util.Utilities
 import org.jivesoftware.smack.packet.Message
+import org.jivesoftware.smackx.filetransfer.FileTransferListener
+import org.jivesoftware.smackx.filetransfer.FileTransferManager
+import org.jivesoftware.smackx.filetransfer.FileTransferRequest
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
@@ -48,6 +51,7 @@ class NetworkConnection(context: Context):ConnectionListener {
     private var mConnection: XMPPTCPConnection?=null
     private var uiThreadMessageREciever:BroadcastReceiver?=null
     var httpFileUploadManager:HttpFileUploadManager?=null
+    var fileTransferManager:FileTransferManager?=null
 
     enum class ConnectionState {
         CONNECTED, AUTHENTICATED, CONNECTING, DISCONNECTING, DISCONNECTED
@@ -303,6 +307,7 @@ class NetworkConnection(context: Context):ConnectionListener {
         }
 
           httpFileUploadManager= HttpFileUploadManager.getInstanceFor(mConnection)
+          fileTransferManager= FileTransferManager.getInstanceFor(mConnection)
 
 
         ChatManager.getInstanceFor(mConnection).addIncomingListener(object :IncomingChatMessageListener{
@@ -336,6 +341,13 @@ class NetworkConnection(context: Context):ConnectionListener {
                     Log.d(TAG,"Received message from :$contactJid broadcast sent.")
                     ///ADDED
                 }
+            }
+        })
+
+        fileTransferManager?.addFileTransferListener(object :FileTransferListener{
+            override fun fileTransferRequest(request: FileTransferRequest?) {
+                // println("File transfer request received : ${request?.fileName}")
+                Log.d(TAG,"File transfer request received : ${request?.fileName}")
             }
         })
 
