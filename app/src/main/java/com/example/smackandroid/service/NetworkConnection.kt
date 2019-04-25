@@ -294,6 +294,8 @@ class NetworkConnection(context: Context):ConnectionListener {
 
         mConnection = XMPPTCPConnection(builder.build())
         mConnection?.addConnectionListener(this)
+        mConnection?.setUseStreamManagement(true)
+       // mConnection?.setUseStreamManagementResumption()
         val roster=Roster.getInstanceFor(mConnection)
         roster.isRosterLoadedAtLogin=true
 
@@ -348,6 +350,8 @@ class NetworkConnection(context: Context):ConnectionListener {
             override fun fileTransferRequest(request: FileTransferRequest?) {
                 // println("File transfer request received : ${request?.fileName}")
                 Log.d(TAG,"File transfer request received : ${request?.fileName}")
+                val transfer=request?.accept()
+                transfer?.recieveFile()
             }
         })
 
