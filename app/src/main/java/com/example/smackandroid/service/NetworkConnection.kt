@@ -32,9 +32,11 @@ import com.example.smackandroid.modal.Type
 import com.example.smackandroid.util.MimeUtils
 import com.example.smackandroid.util.Utilities
 import org.jivesoftware.smack.packet.Message
+import org.jivesoftware.smackx.bytestreams.ibb.packet.Close
 import org.jivesoftware.smackx.filetransfer.FileTransferListener
 import org.jivesoftware.smackx.filetransfer.FileTransferManager
 import org.jivesoftware.smackx.filetransfer.FileTransferRequest
+import org.jivesoftware.smackx.filetransfer.IncomingFileTransfer
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
@@ -48,10 +50,15 @@ class NetworkConnection(context: Context):ConnectionListener {
     private var mUsername: String? = null
     private var mPassword: String? = null
     private var mServiceName: String? = null
-    private var mConnection: XMPPTCPConnection?=null
+    private var mConnection2:XMPPTCPConnection?=null
     private var uiThreadMessageREciever:BroadcastReceiver?=null
     var httpFileUploadManager:HttpFileUploadManager?=null
     var fileTransferManager:FileTransferManager?=null
+
+    companion object {
+        var roster:Roster?=null
+        var mConnection: XMPPTCPConnection?=null
+    }
 
     enum class ConnectionState {
         CONNECTED, AUTHENTICATED, CONNECTING, DISCONNECTING, DISCONNECTED
@@ -261,6 +268,41 @@ class NetworkConnection(context: Context):ConnectionListener {
 
     }
 
+    inner class DownloadFileFromByteStreams:AsyncTask<IncomingFileTransfer,Int,String>(){
+
+        override fun doInBackground(vararg params: IncomingFileTransfer?): String? {
+            val transferRequest=params[0]
+            try {
+              //  val receiveIncommingFile=transferRequest?.receiveFile()
+                Log.d(TAG,"File tranfer request accepted")
+                val os=ByteArrayOutputStream()
+                var nRead:Int?=null
+                val buf=ByteArray(1024)
+//                while ( nRead!=-1 ){
+//                    nRead=receiveIncommingFile?.read(buf,0,buf.size)
+//                    os.write(buf,0,nRead!!)
+//
+//                }
+//                os?.flush()
+//                val a=os.toByteArray()
+//                return "File Downloaded Successfully"
+                return "dfsf"
+
+            }catch (e:Exception){
+                e.printStackTrace()
+                return null
+            }
+        }
+        override fun onProgressUpdate(vararg values: Int?) {
+            Log.d("DownloadFileTask","Progress : ${values[0]}")
+            super.onProgressUpdate(*values)
+        }
+
+        override fun onPostExecute(result: String?) {
+            super.onPostExecute(result)
+        }
+    }
+
 
     init {
         Log.d(TAG,"NetworkConnection Constructor called.")
@@ -286,7 +328,6 @@ class NetworkConnection(context: Context):ConnectionListener {
         builder.setXmppDomain(serviceName)
         builder.setUsernameAndPassword(mUsername, mPassword)
         builder.setResource("SmackAndroid")
-
         //Set up the ui thread broadcast message receiver.
         setUpUiThreadBroadcastMessageReciever()
 
@@ -294,22 +335,31 @@ class NetworkConnection(context: Context):ConnectionListener {
 
         mConnection = XMPPTCPConnection(builder.build())
         mConnection?.addConnectionListener(this)
-        mConnection?.setUseStreamManagement(true)
        // mConnection?.setUseStreamManagementResumption()
-        val roster=Roster.getInstanceFor(mConnection)
-        roster.isRosterLoadedAtLogin=true
+         roster=Roster.getInstanceFor(mConnection)
+         roster?.isRosterLoadedAtLogin=true
+
 
         try {
             Log.d(TAG, "Calling connect")
+            mConnection?.setUseStreamManagement(true)
+            mConnection?.setUseStreamManagementResumption(true)
             mConnection?.connect()
             mConnection?.login(mUsername,mPassword)
+
+            builder.setResource(("SmackReceiver"))
+            mConnection2= XMPPTCPConnection(builder.build())
+            mConnection2?.connect()
+            mConnection2?.login()
+
             Log.d(TAG, " login() Called ")
+
+
         }catch (e:InterruptedException){
             e.printStackTrace()
         }
-
           httpFileUploadManager= HttpFileUploadManager.getInstanceFor(mConnection)
-          fileTransferManager= FileTransferManager.getInstanceFor(mConnection)
+          fileTransferManager= FileTransferManager.getInstanceFor(mConnection2)
 
 
         ChatManager.getInstanceFor(mConnection).addIncomingListener(object :IncomingChatMessageListener{
@@ -349,9 +399,26 @@ class NetworkConnection(context: Context):ConnectionListener {
         fileTransferManager?.addFileTransferListener(object :FileTransferListener{
             override fun fileTransferRequest(request: FileTransferRequest?) {
                 // println("File transfer request received : ${request?.fileName}")
-                Log.d(TAG,"File transfer request received : ${request?.fileName}")
+                Log.d(TAG,"File transfer request received : filename : ${request?.fileName} filesize :  ${request?.streamID}")
+
                 val transfer=request?.accept()
-                transfer?.recieveFile()
+                getFileFromStream(transfer!!)
+//                try{
+//                    val reciveIncommingFile=transfer?.receiveFile()
+//                    val os=ByteArrayOutputStream()
+//                    var nRead:Int?=null
+//                    val buf=ByteArray(1024)
+//                    while ( nRead!=-1 ){
+//                           nRead=reciveIncommingFile?.read(buf,0,buf.size)
+//                           os.write(buf,0,nRead!!)
+//
+//                    }
+//                        os?.flush()
+//                     val a=os.toByteArray()
+//                }catch (e:Exception){
+//                    e.printStackTrace()
+//                }
+
             }
         })
 
@@ -525,6 +592,13 @@ class NetworkConnection(context: Context):ConnectionListener {
     }
 
 
+    fun  getFileFromStream(fileTransferRequest:IncomingFileTransfer){
+         Log.d(TAG,"getFileFromStream Called")
+         val downloadFileFromByteStreamTask=DownloadFileFromByteStreams()
+         downloadFileFromByteStreamTask.execute(fileTransferRequest)
+    }
+
+
 
 
     override fun authenticated(connection: XMPPConnection?, resumed: Boolean) {
@@ -548,10 +622,16 @@ class NetworkConnection(context: Context):ConnectionListener {
         Log.d(TAG,"ConnectionClosedOnError, error "+ e.toString())
     }
 
+
+
+
+
     override fun reconnectingIn(seconds: Int) {
         NetworkConnectionService.sConnectionState = ConnectionState.CONNECTING
         Log.d(TAG,"ReconnectingIn")
     }
+
+
 
     override fun reconnectionFailed(e: Exception?) {
         NetworkConnectionService.sConnectionState = ConnectionState.DISCONNECTED

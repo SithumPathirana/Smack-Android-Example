@@ -9,9 +9,16 @@ import android.os.Bundle
 import android.support.v7.widget.DividerItemDecoration
 import android.support.v7.widget.LinearLayoutManager
 import android.support.v7.widget.RecyclerView
+import android.util.Log
 import android.widget.Toast
 import com.example.smackandroid.modal.Contact
 import com.example.smackandroid.R
+import com.example.smackandroid.service.NetworkConnection
+import org.jivesoftware.smack.SmackException
+import org.jivesoftware.smack.packet.Presence
+import org.jxmpp.jid.impl.JidCreate
+
+
 
 class ContactListActivity : AppCompatActivity() {
 
@@ -62,10 +69,40 @@ class ContactListActivity : AppCompatActivity() {
 
 
     private val goToChatActivity:(Int)->Unit={
+        addContactToRoster(contactList[it].jid)
         val intent=Intent(this, ChatActivity::class.java)
         intent.putExtra("jid",contactList[it].jid)
         startActivity(intent)
     }
+
+
+    private fun addContactToRoster(jid:String){
+//          if (NetworkConnection.roster!!.isLoaded){
+//              Log.d(TAG,"Roster is loaded")
+//              try {
+//                  NetworkConnection.roster!!.reloadAndWait()
+//              } catch (e: SmackException.NotLoggedInException) {
+//                  Log.i(TAG, "NotLoggedInException")
+//                  e.printStackTrace()
+//              } catch (e: SmackException.NotConnectedException) {
+//                  Log.i(TAG, "NotConnectedException")
+//                  e.printStackTrace()
+//              }
+//
+//          }
+//
+//          val rosterEntries=NetworkConnection.roster!!.entries
+//          rosterEntries.forEach {
+//              Log.e(TAG,"Available items in the roster : ${it.jid}")
+//          }
+//
+//         NetworkConnection.roster!!.createEntry(JidCreate.bareFrom(jid),"abc",null)
+        val subscribe = Presence(Presence.Type.subscribe)
+        subscribe.to=JidCreate.from(jid)
+        NetworkConnection.mConnection?.sendStanza(subscribe)
+    }
+
+
 
     private fun askStoragePermissions(){
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
