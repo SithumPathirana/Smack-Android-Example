@@ -16,7 +16,12 @@ import com.example.smackandroid.R
 import com.example.smackandroid.service.NetworkConnection
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.Presence
+import org.jivesoftware.smackx.iqregister.AccountManager
 import org.jxmpp.jid.impl.JidCreate
+import org.jxmpp.jid.parts.Localpart
+import java.lang.Exception
+
+
 
 
 
@@ -70,9 +75,33 @@ class ContactListActivity : AppCompatActivity() {
 
     private val goToChatActivity:(Int)->Unit={
         addContactToRoster(contactList[it].jid)
+        //registerUser()
         val intent=Intent(this, ChatActivity::class.java)
         intent.putExtra("jid",contactList[it].jid)
         startActivity(intent)
+    }
+
+    private fun registerUser(){
+        try {
+            Log.d(TAG,"Creating a new user")
+
+            val accountManager=AccountManager.getInstance(NetworkConnection.mConnection)
+
+            if (accountManager.supportsAccountCreation()){
+                val attributes = HashMap<String,String>()
+
+
+
+                accountManager.sensitiveOperationOverInsecureConnection(true)
+                accountManager.createAccount(Localpart.from("amazinguser") ,"test123#")
+            }
+
+
+
+        }catch (e:Exception){
+           e.printStackTrace()
+        }
+
     }
 
 
@@ -100,6 +129,9 @@ class ContactListActivity : AppCompatActivity() {
         val subscribe = Presence(Presence.Type.subscribe)
         subscribe.to=JidCreate.from(jid)
         NetworkConnection.mConnection?.sendStanza(subscribe)
+
+        val available=Presence(Presence.Type.available,"I am available",42, Presence.Mode.chat)
+        NetworkConnection.mConnection?.sendStanza(available)
     }
 
 

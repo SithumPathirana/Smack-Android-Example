@@ -34,6 +34,7 @@ class ChatActivity : AppCompatActivity() {
     companion object {
         const val TAG="ChatActivity"
         const val FILE_SELECT_ACTIVITY_REQUEST_CODE=123
+        const val FILE_TRANSFER_REQUEST_CODE=124
     }
 
 
@@ -106,8 +107,9 @@ class ChatActivity : AppCompatActivity() {
                messagesList.add(insertIndex, ChatMessage("Send Image",Type.IMAGE_SENT,contactJID!!,"") )
                adapter?.notifyItemInserted(insertIndex)
            }
-           R.id.receive_video ->  {
-
+           R.id.transfer_file ->  {
+               Log.d(TAG,"User wants to transfer a file")
+               transferFile()
            }
            R.id.send_office -> {
 
@@ -238,6 +240,11 @@ class ChatActivity : AppCompatActivity() {
         startActivityForResult(intent, FILE_SELECT_ACTIVITY_REQUEST_CODE)
     }
 
+    private fun transferFile(){
+        val intent = Intent(Intent.ACTION_GET_CONTENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE)
+        startActivityForResult(intent, FILE_TRANSFER_REQUEST_CODE)
+    }
+
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (resultCode== Activity.RESULT_OK){
@@ -259,6 +266,19 @@ class ChatActivity : AppCompatActivity() {
                     }
 
                     NetworkConnectionService.getConnection().sendFile(filePath,contactJID!!)
+                }
+                FILE_TRANSFER_REQUEST_CODE->{
+                    val selectedFile=data?.data
+                    filePath=RealPathUtil.getRealPath(this,selectedFile!!)
+                    Log.d(TAG,"File Uri is $selectedFile")
+                    Log.d(TAG,"File path is $filePath")
+
+                    if (filePath==null){
+                        Log.d(TAG,"File uri is null")
+                        return
+                    }
+
+                    NetworkConnectionService.getConnection().transferFile(filePath,contactJID!!)
                 }
             }
         }

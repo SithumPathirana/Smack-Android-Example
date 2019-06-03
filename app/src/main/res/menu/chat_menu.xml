@@ -16,8 +16,8 @@
 
     </item>
 
-    <item android:id="@+id/receive_video"
-           android:title="@string/receive_video">
+    <item android:id="@+id/transfer_file"
+           android:title="@string/transfer_file">
 
     </item>
 

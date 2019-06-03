@@ -9,14 +9,9 @@ import android.os.AsyncTask
 import android.os.Environment
 import android.preference.PreferenceManager
 import android.util.Log
-import org.jivesoftware.smack.ConnectionListener
-import org.jivesoftware.smack.XMPPConnection
 import org.jivesoftware.smack.tcp.XMPPTCPConnection
 import java.lang.Exception
 import org.jivesoftware.smack.tcp.XMPPTCPConnectionConfiguration
-import org.jivesoftware.smack.ReconnectionManager
-import org.jivesoftware.smack.SmackException
-import org.jivesoftware.smack.XMPPException
 import org.jivesoftware.smack.chat2.Chat
 import org.jivesoftware.smack.chat2.ChatManager
 import org.jivesoftware.smack.chat2.IncomingChatMessageListener
@@ -31,12 +26,18 @@ import com.example.smackandroid.modal.ChatMessage
 import com.example.smackandroid.modal.Type
 import com.example.smackandroid.util.MimeUtils
 import com.example.smackandroid.util.Utilities
+import org.jivesoftware.smack.*
+import org.jivesoftware.smack.filter.PresenceTypeFilter
+import org.jivesoftware.smack.filter.StanzaFilter
+import org.jivesoftware.smack.filter.StanzaTypeFilter
 import org.jivesoftware.smack.packet.Message
+import org.jivesoftware.smack.packet.Presence
+import org.jivesoftware.smack.packet.Stanza
 import org.jivesoftware.smackx.bytestreams.ibb.packet.Close
-import org.jivesoftware.smackx.filetransfer.FileTransferListener
-import org.jivesoftware.smackx.filetransfer.FileTransferManager
-import org.jivesoftware.smackx.filetransfer.FileTransferRequest
-import org.jivesoftware.smackx.filetransfer.IncomingFileTransfer
+import org.jivesoftware.smackx.filetransfer.*
+import org.jxmpp.jid.EntityFullJid
+import org.jxmpp.util.XmppStringUtils
+import org.jxmpp.util.cache.LruCache
 import java.io.*
 import java.net.HttpURLConnection
 import java.net.MalformedURLException
@@ -50,14 +51,18 @@ class NetworkConnection(context: Context):ConnectionListener {
     private var mUsername: String? = null
     private var mPassword: String? = null
     private var mServiceName: String? = null
-    private var mConnection2:XMPPTCPConnection?=null
+//    private var mConnection2:XMPPTCPConnection?=null
     private var uiThreadMessageREciever:BroadcastReceiver?=null
     var httpFileUploadManager:HttpFileUploadManager?=null
-    var fileTransferManager:FileTransferManager?=null
+    var fileTransferManager1:FileTransferManager?=null
+    var fileTransferManager2:FileTransferManager?=null
+    var outgoingFileTransfer:OutgoingFileTransfer?=null
+    var stanzaFilter:StanzaFilter?=null
 
     companion object {
         var roster:Roster?=null
         var mConnection: XMPPTCPConnection?=null
+        val ENTITY_FULLJID_CACHE = LruCache<String,EntityFullJid>(100)
     }
 
     enum class ConnectionState {
@@ -304,6 +309,40 @@ class NetworkConnection(context: Context):ConnectionListener {
     }
 
 
+    inner  class  FileTransferTask:AsyncTask<String,Long,String>(){
+
+        override fun doInBackground(vararg params: String?): String {
+            val fileFullPath=params[0]
+            var contactJid=params[1]
+
+            Log.d(TAG,fileFullPath)
+            Log.d(TAG,contactJid);
+
+             fileTransferManager1= FileTransferManager.getInstanceFor(mConnection)
+             outgoingFileTransfer=fileTransferManager1!!.createOutgoingFileTransfer(JidCreate.entityFullFrom(contactJid))
+            try {
+                outgoingFileTransfer!!.sendFile(File(fileFullPath),"Just a normal file")
+            }catch (e:XMPPException){
+               e.printStackTrace()
+            }
+
+
+            return  "File uploaded succesfully"
+        }
+
+        override fun onPostExecute(result: String?) {
+            Log.d("FileTransferTask","File transfer process is completed")
+            super.onPostExecute(result)
+        }
+
+        override fun onProgressUpdate(vararg values: Long?) {
+            Log.d("FileTransferTask","Progress : ${values[0]}")
+            super.onProgressUpdate(*values)
+        }
+
+    }
+
+
     init {
         Log.d(TAG,"NetworkConnection Constructor called.")
         mApplicationContext=context.applicationContext
@@ -345,12 +384,48 @@ class NetworkConnection(context: Context):ConnectionListener {
             mConnection?.setUseStreamManagement(true)
             mConnection?.setUseStreamManagementResumption(true)
             mConnection?.connect()
+
+
+            stanzaFilter = StanzaTypeFilter(Presence::class.java)
+            val collector= mConnection!!.createStanzaCollector(stanzaFilter)
+            mConnection!!.addAsyncStanzaListener(object : StanzaListener{
+                override fun processStanza(packet: Stanza?) {
+
+                    if(packet is Presence){
+                       if (packet.type == Presence.Type.subscribe){
+
+                           Log.d(TAG,"Received subscribe stanza from ${packet.from}")
+                           Log.d(TAG,"Sending subscribed response to ${packet.from}")
+
+                           val subscribed = Presence(Presence.Type.subscribed)
+                           subscribed.to=JidCreate.from(packet.from)
+                           mConnection?.sendStanza(subscribed)
+
+
+                       }
+
+
+                        if (packet.type == Presence.Type.probe){
+
+                            Log.d(TAG,"Probe request received from ${packet.from}")
+                        }
+                    }
+
+
+                }
+            },stanzaFilter)
+
             mConnection?.login(mUsername,mPassword)
 
-            builder.setResource(("SmackReceiver"))
-            mConnection2= XMPPTCPConnection(builder.build())
-            mConnection2?.connect()
-            mConnection2?.login()
+
+
+
+
+
+//            builder.setResource(("SmackReceiver"))
+//            mConnection2= XMPPTCPConnection(builder.build())
+//            mConnection2?.connect()
+//            mConnection2?.login(mUsername,mPassword)
 
             Log.d(TAG, " login() Called ")
 
@@ -359,7 +434,7 @@ class NetworkConnection(context: Context):ConnectionListener {
             e.printStackTrace()
         }
           httpFileUploadManager= HttpFileUploadManager.getInstanceFor(mConnection)
-          fileTransferManager= FileTransferManager.getInstanceFor(mConnection2)
+          fileTransferManager1= FileTransferManager.getInstanceFor(mConnection)
 
 
         ChatManager.getInstanceFor(mConnection).addIncomingListener(object :IncomingChatMessageListener{
@@ -396,29 +471,13 @@ class NetworkConnection(context: Context):ConnectionListener {
             }
         })
 
-        fileTransferManager?.addFileTransferListener(object :FileTransferListener{
+        fileTransferManager1?.addFileTransferListener(object :FileTransferListener{
             override fun fileTransferRequest(request: FileTransferRequest?) {
                 // println("File transfer request received : ${request?.fileName}")
                 Log.d(TAG,"File transfer request received : filename : ${request?.fileName} filesize :  ${request?.streamID}")
 
                 val transfer=request?.accept()
                 getFileFromStream(transfer!!)
-//                try{
-//                    val reciveIncommingFile=transfer?.receiveFile()
-//                    val os=ByteArrayOutputStream()
-//                    var nRead:Int?=null
-//                    val buf=ByteArray(1024)
-//                    while ( nRead!=-1 ){
-//                           nRead=reciveIncommingFile?.read(buf,0,buf.size)
-//                           os.write(buf,0,nRead!!)
-//
-//                    }
-//                        os?.flush()
-//                     val a=os.toByteArray()
-//                }catch (e:Exception){
-//                    e.printStackTrace()
-//                }
-
             }
         })
 
@@ -542,6 +601,13 @@ class NetworkConnection(context: Context):ConnectionListener {
           val fileUploadTask=FileUploadTask()
           fileUploadTask.execute(fileFullPath,counterPartJid)
 
+
+    }
+
+    fun transferFile(fileFullPath:String,contactJid: String){
+        Log.d(TAG,"Transfer file called")
+        val fileTransferTask=FileTransferTask()
+        fileTransferTask.execute(fileFullPath,contactJid)
     }
 
     fun downloadFileFromServer(fileUrl:String,contactJid:String){

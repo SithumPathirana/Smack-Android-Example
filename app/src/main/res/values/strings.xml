@@ -14,7 +14,7 @@
     </string>
     <string name="contact_details">Contact Details</string>
     <string name="send_image">Send Image</string>
-    <string name="receive_video">Receive Video</string>
+    <string name="transfer_file"> Transfer File </string>
     <string name="send_office">Send Office</string>
     <string name="send_file">Send File</string>
 </resources>
