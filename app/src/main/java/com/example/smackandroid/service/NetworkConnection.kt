@@ -33,6 +33,7 @@ import org.jivesoftware.smack.filter.StanzaTypeFilter
 import org.jivesoftware.smack.packet.Message
 import org.jivesoftware.smack.packet.Presence
 import org.jivesoftware.smack.packet.Stanza
+import org.jivesoftware.smack.roster.RosterEntry
 import org.jivesoftware.smackx.bytestreams.ibb.packet.Close
 import org.jivesoftware.smackx.filetransfer.*
 import org.jxmpp.jid.EntityFullJid
@@ -59,10 +60,11 @@ class NetworkConnection(context: Context):ConnectionListener {
     var outgoingFileTransfer:OutgoingFileTransfer?=null
     var stanzaFilter:StanzaFilter?=null
 
+
     companion object {
-        var roster:Roster?=null
         var mConnection: XMPPTCPConnection?=null
         val ENTITY_FULLJID_CACHE = LruCache<String,EntityFullJid>(100)
+        var roster:Roster?=null
     }
 
     enum class ConnectionState {
@@ -342,6 +344,14 @@ class NetworkConnection(context: Context):ConnectionListener {
 
     }
 
+    inner  class  LogoutUser:AsyncTask<String,Int,String>(){
+
+        override fun doInBackground(vararg params: String?): String {
+             mConnection?.disconnect()
+             return  "User logout successfully"
+        }
+    }
+
 
     init {
         Log.d(TAG,"NetworkConnection Constructor called.")
@@ -352,7 +362,6 @@ class NetworkConnection(context: Context):ConnectionListener {
         if (jid!=null){
             mUsername=jid.split("@")[0]
             mServiceName=jid.split("@")[1]
-
         }else{
             mUsername=""
             mServiceName=""
@@ -374,7 +383,6 @@ class NetworkConnection(context: Context):ConnectionListener {
 
         mConnection = XMPPTCPConnection(builder.build())
         mConnection?.addConnectionListener(this)
-       // mConnection?.setUseStreamManagementResumption()
          roster=Roster.getInstanceFor(mConnection)
          roster?.isRosterLoadedAtLogin=true
 
@@ -384,6 +392,9 @@ class NetworkConnection(context: Context):ConnectionListener {
             mConnection?.setUseStreamManagement(true)
             mConnection?.setUseStreamManagementResumption(true)
             mConnection?.connect()
+
+
+
 
 
             stanzaFilter = StanzaTypeFilter(Presence::class.java)
@@ -403,12 +414,6 @@ class NetworkConnection(context: Context):ConnectionListener {
 
 
                        }
-
-
-                        if (packet.type == Presence.Type.probe){
-
-                            Log.d(TAG,"Probe request received from ${packet.from}")
-                        }
                     }
 
 
@@ -416,6 +421,7 @@ class NetworkConnection(context: Context):ConnectionListener {
             },stanzaFilter)
 
             mConnection?.login(mUsername,mPassword)
+            roster!!.subscriptionMode= Roster.SubscriptionMode.manual
 
 
 
@@ -608,6 +614,11 @@ class NetworkConnection(context: Context):ConnectionListener {
         Log.d(TAG,"Transfer file called")
         val fileTransferTask=FileTransferTask()
         fileTransferTask.execute(fileFullPath,contactJid)
+    }
+
+    fun logoutUser(){
+        val logoutUserTask=LogoutUser()
+        logoutUserTask.execute()
     }
 
     fun downloadFileFromServer(fileUrl:String,contactJid:String){

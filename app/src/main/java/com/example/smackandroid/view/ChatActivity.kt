@@ -119,6 +119,11 @@ class ChatActivity : AppCompatActivity() {
                Log.d(TAG,"User wants to send a file")
                sendFile()
            }
+
+           R.id.logout -> {
+               Log.d(TAG,"User is logging out")
+               logoutUser()
+           }
        }
         return true
 
@@ -282,5 +287,9 @@ class ChatActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+
+    private fun logoutUser(){
+       NetworkConnectionService.getConnection().logoutUser()
     }
 }

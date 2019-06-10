@@ -14,12 +14,18 @@ import android.widget.Toast
 import com.example.smackandroid.modal.Contact
 import com.example.smackandroid.R
 import com.example.smackandroid.service.NetworkConnection
+import com.example.smackandroid.service.NetworkConnectionService
 import org.jivesoftware.smack.SmackException
 import org.jivesoftware.smack.packet.Presence
+import org.jivesoftware.smack.roster.Roster
 import org.jivesoftware.smackx.iqregister.AccountManager
 import org.jxmpp.jid.impl.JidCreate
 import org.jxmpp.jid.parts.Localpart
 import java.lang.Exception
+
+
+
+
 
 
 
@@ -124,14 +130,30 @@ class ContactListActivity : AppCompatActivity() {
 //          rosterEntries.forEach {
 //              Log.e(TAG,"Available items in the roster : ${it.jid}")
 //          }
-//
-//         NetworkConnection.roster!!.createEntry(JidCreate.bareFrom(jid),"abc",null)
-        val subscribe = Presence(Presence.Type.subscribe)
-        subscribe.to=JidCreate.from(jid)
-        NetworkConnection.mConnection?.sendStanza(subscribe)
+        // NetworkConnection.roster!!.createEntry(JidCreate.bareFrom(jid),"abc",null)
 
-        val available=Presence(Presence.Type.available,"I am available",42, Presence.Mode.chat)
-        NetworkConnection.mConnection?.sendStanza(available)
+//        val subscribe = Presence(Presence.Type.subscribe)
+//        subscribe.to=JidCreate.from(jid)
+//        NetworkConnection.mConnection?.sendStanza(subscribe)
+
+   //     val available=Presence(Presence.Type.available,"I am available",42, Presence.Mode.chat)
+      //  NetworkConnection.mConnection?.sendStanza(available)
+        val roster=NetworkConnection.roster
+        if (!roster!!.isLoaded){
+            try {
+                roster!!.reloadAndWait()
+            } catch (e: SmackException.NotLoggedInException) {
+                Log.i(TAG, "User is not logged in")
+                e.printStackTrace()
+            } catch (e: SmackException.NotConnectedException) {
+                Log.i(TAG, "User is not connected")
+                e.printStackTrace()
+            }
+        }
+        roster!!.createEntry(JidCreate.bareFrom(jid),"Preferred Nickname",null)
+
+
+
     }
 
 

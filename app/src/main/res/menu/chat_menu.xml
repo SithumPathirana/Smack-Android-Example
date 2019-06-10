@@ -25,4 +25,8 @@
            android:title="@string/send_office">
     </item>
 
+    <item android:id="@+id/logout"
+          android:title="@string/logout">
+    </item>
+
 </menu>

@@ -17,4 +17,5 @@
     <string name="transfer_file"> Transfer File </string>
     <string name="send_office">Send Office</string>
     <string name="send_file">Send File</string>
+    <string name="logout">Logout</string>
 </resources>
